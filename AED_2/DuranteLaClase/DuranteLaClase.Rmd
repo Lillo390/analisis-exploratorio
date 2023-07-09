@@ -1,0 +1,60 @@
+---
+title: "A borrar"
+author: "Daniel Lillo Plaza"
+date: "14/10/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Creamos directorio si no existe
+if (!file.exists("data")) {
+ dir.create("data")
+}
+# Descargamos fichero enlazado en salarios.csv
+fileUrl <- "https://arcg.is/0Pue4P0"
+download.file(fileUrl,destfile = "./data/salarios.csv",method = "curl")
+list.files("./data")
+# Incluimos fecha
+dateDownloaded <- date()
+
+# Creamos directorio si no existe
+if (!file.exists("data")) {
+ dir.create("data")
+}
+# Descargamos fichero enlazado en salarios.csv
+fileUrl <- "https://archive.ics.uci.edu/ml/machine-learning-databases/auto-mpg/auto-mpg.names"
+download.file(fileUrl,destfile = "./data/auto_mpg_names.csv",method = "curl")
+list.files("./data")
+# Incluimos fecha
+dateDownloaded <- date()
+
+auto_mpg_data <- read.table("./data/auto_mpg_data.csv", quote="\"", comment.char="")
+names(auto_mpg_data)<-c("mpg", "cylinders","displacement","horsepower", "weight", "acceleration", "model_year", "origin","car_name")
+```
+
+```{r}
+library(readr)
+year<-1950
+f <- read_csv("data/children_per_woman_total_fertility.csv")
+m <- read_csv("data/child_mortality_0_5_year_olds_dying_per_1000_born.csv")
+
+#x=child_mortality_0_5_year_olds_dying_per_1000_born$`1950`
+#y=children_per_woman_total_fertility$`1950`
+for (year in c("1901", "1950", "2000")){
+  namecol<-colnames(m)
+  
+  PaisesComunes<-intersect(f$country, m$country)
+  mortality_C<-m[m$country %in% PaisesComunes,]
+  fertility_C<-f[f$country %in% PaisesComunes, ]
+  Mor_year<-mortality_C[,which(namecol==year)]
+  Fer_year<-fertility_C[,which(namecol==year)]
+  plot(unlist(Mor_year), unlist(Fer_year), main=paste("Mortalidad 0-5 años/1000 frente a Fertilidad. Año:", year), sub="Cada punto es un país", xlab=paste0("Mortality ", year), ylab=paste0("Fertility ", year))
+}
+
+
+
+```

@@ -1,0 +1,641 @@
+---
+title: "Solución Ejercicios 1 y 2, Tema 3. Diagnóstico y validación en Regresión lineal múltiple."
+subtitle: "Máster en Ciencia de Datos. Módulo: Análisis exploratorio de datos"
+author: "Ana Navarro Quiles"
+date: "Curso 2022/2023"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE,message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r,echo=T}
+load('datosTema3.Rdata')
+```
+## Ejercicio 1
+
+Los sistemas de entrega de productos son de vital importancia para las empresas. En particular, les suele interesar predecir el _tiempo_ necesario para realizar los pedidos. Supongamos que la persona responsable de analizar los datos a cargo de una empresa sólo tiene acceso rápido a información sobre la distancia y el número de cajas que ha de distribuirse en cada pedido. En el fichero **cervezas** tenemos unos datos que representan las tres variables nombradas.
+
+
+a) ¿Cuál es el porcentaje de varianza explicada por tu modelo?¿Qué variables son relevantes?
+
+
+```{r,eval=T}
+mod1 <- lm(tiempo ~ ., data=cervezas, na.action=na.exclude) 
+summary(mod1)
+```
+
+b) Diagnostica el modelo ¿Qué observas?¿ Puedes mejorar tu modelo solucionando el o los problemas observados?
+
+```{r,eval=T}
+par(mfrow=c(2,2))
+plot(mod1)
+```
+```{r,eval=T}
+res_stu<-rstudent(mod1)
+par(mfrow=c(1,1))
+plot(fitted(mod1),res_stu)
+ abline(h=0, col="gray") 
+
+
+ library(ggplot2)
+  library(gridExtra)
+  ggplot(data = cervezas, aes(x =fitted(mod1), y = res_stu)) + 
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  labs(y = "residuos studentizados",
+       x = "valores ajustados") +
+  theme_bw()
+  
+  parciales <- residuals(mod1,type="partial")
+plot(cervezas$cajas,parciales[,1]) 
+plot(cervezas$distancia,parciales[,2]) 
+  
+  
+  plot1 <- ggplot(data = cervezas, aes(cajas, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  plot2 <- ggplot(data = cervezas, aes(distancia, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  grid.arrange(plot1, plot2)
+  
+  # Vemos que falla la linealidad, pero parece consecuencia de outliers. Luego
+  # veremos si estos outliers son valores influyentes también.
+
+```
+
+```{r,eval=T}
+library(lmtest)
+    bptest(mod1) 
+    # No hay problema con la homocedasticidad.
+    
+library(car)
+vif(mod1)  # No hay problema con la colinealidad.
+```
+```{r,eval=T}
+qqnorm(res_stu)
+qqline(res_stu,col="red")
+
+shapiro.test(res_stu) #Falla la normalidad.
+
+cervezas[abs(res_stu) > 3,] #El 5 es un outlier, veamos si también influyente.
+```
+
+```{r,eval=T}
+  n<-nrow(cervezas)
+  p<-ncol(cervezas)-1
+  plot(fitted(mod1),hatvalues(mod1),main="leverages vs fitted")
+  abline(h=2*3/n,col="red",lwd=1);  
+  abline(h=3*3/n,col="red",lwd=3);
+  
+  
+  boxplot(hatvalues(mod1))   
+  summary(hatvalues(mod1))
+  
+   plot(fitted(mod1),cooks.distance(mod1),main="Distancia de Cook vs fitted")
+  abline(h=4/(n-p-1),col="red",lwd=1); 
+  
+  
+  boxplot(cooks.distance(mod1))
+  summary(cooks.distance(mod1)) 
+  
+   library(car)
+  influencePlot(mod1)
+  summary(influence.measures(mod1))
+```
+
+
+```{r,eval=T}
+# La única solución sería eliminar el valor influyente. Siempre y cuando la investigación
+# lo permita.
+cervezas2<-cervezas[-5,]
+```
+
+```{r,eval=T}
+mod2 <- lm(tiempo ~ ., data=cervezas2, na.action=na.exclude) 
+summary(mod2)
+```
+```{r,eval=T}
+par(mfrow=c(2,2))
+plot(mod2)
+```
+
+```{r,eval=T}
+res_stu<-rstudent(mod2)
+par(mfrow=c(1,1))
+plot(fitted(mod2),res_stu)
+ abline(h=0, col="gray") 
+
+
+ library(ggplot2)
+  library(gridExtra)
+  ggplot(data = cervezas2, aes(x =fitted(mod2), y = res_stu)) + 
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  labs(y = "residuos studentizados",
+       x = "valores ajustados") +
+  theme_bw()
+  
+  parciales <- residuals(mod2,type="partial")
+plot(cervezas2$cajas,parciales[,1]) 
+plot(cervezas2$distancia,parciales[,2]) 
+  
+  
+  plot1 <- ggplot(data = cervezas2, aes(cajas, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  plot2 <- ggplot(data = cervezas2, aes(distancia, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  grid.arrange(plot1, plot2)
+  
+  # Parece que ya no tenemos problemas con la linealidad
+
+```
+
+```{r,eval=T}
+library(lmtest)
+    bptest(mod2) 
+    # No hay problema con la homocedasticidad.
+    
+library(ISLR)
+vif(mod2)  # No hay problema con la colinealidad.
+```
+
+```{r,eval=T}
+qqnorm(res_stu)
+qqline(res_stu,col="red")
+
+shapiro.test(res_stu) #No hay problema con la normalidad.
+
+cervezas2[abs(res_stu) > 3,] #No hay outliers
+```
+```{r,eval=T}
+  n<-nrow(cervezas2)
+  p<-ncol(cervezas2)
+  plot(fitted(mod2),hatvalues(mod2),main="leverages vs fitted")
+  abline(h=2*3/n,col="red",lwd=1);  
+  abline(h=3*3/n,col="red",lwd=3);
+  
+  
+  boxplot(hatvalues(mod2))   
+  summary(hatvalues(mod2))
+  
+   plot(fitted(mod2),cooks.distance(mod2),main="Distancia de Cook vs fitted")
+  abline(h=4/(n-p-1),col="red",lwd=1); 
+  
+  
+  boxplot(cooks.distance(mod2))
+  summary(cooks.distance(mod2)) 
+  
+   library(car)
+  influencePlot(mod2)
+  summary(influence.measures(mod2))
+```
+
+c) Puedes realizar una predicción para  un nuevo reparto que consiste en llevar 20 cajas a 40 km de distancia y dar su error de predicción. ¿Y si hay que llevarlas a 70km?
+
+```{r,eval=T}
+plot(cervezas2$cajas,cervezas2$distancia)
+x0 <- data.frame(cajas=20, distancia=40)
+predict(mod2,newdata=x0,interval='prediction') 
+# A 70km no se puede hacer la predicción, dado que la muestra que hemos tomado
+# llega únicamente a los 40km
+```
+\textbf{EXTRA:} Vamos a calcular el error de predicción con las distintas metodologías vistas en clase
+
+```{r,eval=T}
+### Validación
+set.seed(12345)
+seleccion <- sample(nrow(cervezas2),round(nrow(cervezas2)*3/4))
+entrenamiento <- cervezas2[seleccion,]
+prueba <- cervezas2[-seleccion,]
+
+
+ajuste <- lm(tiempo ~ .,data=entrenamiento)
+summary(ajuste)
+prediccion <- predict(ajuste,prueba)
+(ecm <- mean((prueba$tiempo-prediccion)^2))
+```
+
+
+```{r,eval=T}
+### Validación (variabilidad)
+resultados <- NULL
+for (i in 1:20) {
+  seleccion <- sample(nrow(cervezas2),round(nrow(cervezas2)*3/4))
+entrenamiento <- cervezas2[seleccion,]
+prueba <- cervezas2[-seleccion,]
+ajuste <- lm(tiempo ~ .,data=entrenamiento)
+summary(ajuste)
+prediccion <- predict(ajuste,prueba)
+  resultados <- c(resultados,mean((prueba$tiempo-prediccion)^2))
+}
+summary(resultados)
+```
+
+
+```{r,eval=T}
+### Validación cruzada
+library(boot)
+ajuste <- glm(tiempo ~ ., data=cervezas2)
+set.seed(12345)
+ecm <- cv.glm(cervezas2,ajuste,K=5)
+ecm$delta[1]
+
+### Validación cruzada (variabilidad)
+
+resultadosK <- NULL
+for (i in 1:20) {
+   resultadosK <- c(resultadosK,cv.glm(cervezas2,ajuste,K=5)$delta[1])
+}
+summary(resultadosK)
+```
+
+```{r,eval=T}
+# Bootstrap de la estimación de los coeficientes de la regresión lineal múltiple
+B <- 1000
+boot.fun <- function(datos,indice) {
+  coeficientes <- coef(lm(tiempo~.,
+                          data=datos,subset=indice))
+}
+set.seed(12345)
+boot(cervezas2,boot.fun,B)
+
+### Bootstrap de una nueva predicción
+xcajas <- 12
+xdistancia <- 33
+ajuste <- lm(tiempo ~ ., data=cervezas2)
+predict(ajuste,newdata = data.frame(cajas=xcajas,distancia=xdistancia), se.fit=TRUE,interval = 'confidence')
+
+B <- 1000
+boot.fun <- function(datos,indice,x1=x1,x2=x2) {
+  coeficientes <- coef(lm(tiempo~.,
+                          data=datos,subset=indice))
+  return(coeficientes[1]+coeficientes[2]*x1+coeficientes[3]*x2)
+}
+set.seed(12345)
+boot(cervezas2,boot.fun,B,x1=xcajas,x2=xdistancia)
+
+```
+
+
+## Ejercicio 2
+
+En los procesos de producción, hay bastante confusión sobre cuáles son las partes del proceso que hacen que ocurran desviaciones del resultado final que se está buscando. Existen diferentes factores que pueden influir: la temperatura del proceso de producción, la densidad del producto, o la propia tasa de producción. El fichero **defectos** contiene información sobre el número medio de defectos (en cada lote analizado) encontrados en 30 pruebas, junto con el valor de las covariables antes comentadas. 
+
+  a) Ajusta un modelo para predecir el número medio de defectos con la información disponible, diagnostica el modelo y evalúa la efectividad de posibles soluciones. 
+
+
+```{r,eval=T}
+mod1 <- lm(defectuosos ~ temperatura+densidad+tasa, data=defectos, na.action=na.exclude) 
+summary(mod1)
+# Observamos que el modelo es significativo, aunque por separado sus coeficientes no lo son.
+# Vamos a diagnosticarlo
+
+par(mfrow=c(2,2))
+plot(mod1)
+
+
+res_stu<-rstudent(mod1)
+par(mfrow=c(1,1))
+plot(fitted(mod1),res_stu)
+ abline(h=0, col="gray") 
+
+
+ library(ggplot2)
+  library(gridExtra)
+  ggplot(data = defectos, aes(x =fitted(mod1), y = res_stu)) + 
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  labs(y = "residuos studentizados",
+       x = "valores ajustados") +
+  theme_bw()
+  
+  parciales <- residuals(mod1,type="partial")
+plot(defectos$temperatura,parciales[,1]) 
+plot(defectos$densidad,parciales[,2]) 
+plot(defectos$tasa,parciales[,3])
+  
+  
+  plot1 <- ggplot(data = defectos, aes(temperatura, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  plot2 <- ggplot(data = defectos, aes(densidad, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  plot3 <- ggplot(data = defectos, aes(tasa, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  grid.arrange(plot1, plot2,plot3)
+  
+  
+  library(lmtest)
+    bptest(mod1) 
+    # No hay problema con la homocedasticidad.
+    
+library(car)
+vif(mod1)  # Hay problema con la multicolinealidad
+
+pairs(defectos[,c('temperatura','densidad','tasa')])
+cor(defectos[,c('defectuosos','temperatura','densidad','tasa')])
+
+# Como soluciones sería mejorar el diseño del experimento o obtener una muestra
+# más grande. En este caso no es posible y lo único que podemos hacer es 
+# eliminar aquella variable que pensamos que está causando el problema (En este 
+# caso parece que es tasa: dado que es la que menos relación tiene con Y=defectuosos
+# pero tiene mucha relación con temperatura y densidad. Nos interesa quitar las 
+# que tengan menos relación con Y. Además es la que tiene el p-valor más alto, es la menos significativa de todas.)
+
+
+qqnorm(res_stu)
+qqline(res_stu,col="red")
+
+shapiro.test(res_stu) #No falla la normalidad.
+
+defectos[abs(res_stu) > 3,] # No hay outliers
+
+
+  boxplot(hatvalues(mod1))   
+  
+   plot(fitted(mod1),cooks.distance(mod1),main="Distancia de Cook vs fitted")
+  abline(h=0.33,col="red",lwd=1); 
+  
+  
+  boxplot(cooks.distance(mod1))
+
+   library(car)
+  influencePlot(mod1)
+  summary(influence.measures(mod1)) # . 
+```
+
+
+
+
+```{r,eval=T}
+# Vamos a definir el nuevo modelo quitando la variable tasa
+mod0 <- lm(defectuosos ~ temperatura+densidad+tasa, data=defectos, na.action=na.exclude) 
+summary(mod0)
+mod1 <- lm(defectuosos ~ temperatura+densidad, data=defectos, na.action=na.exclude) 
+summary(mod1)
+anova(mod0,mod1) # La variable tasa no es significativa
+# Observamos que el modelo es significativo, aunque por separado la temperatura sí que lo es pero la densidad no.
+
+# Vamos a diagnosticarlo
+
+par(mfrow=c(2,2))
+plot(mod1)
+
+
+res_stu<-rstudent(mod1)
+par(mfrow=c(1,1))
+plot(fitted(mod1),res_stu)
+ abline(h=0, col="gray") 
+
+
+ library(ggplot2)
+  library(gridExtra)
+  ggplot(data = defectos, aes(x =fitted(mod1), y = res_stu)) + 
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  labs(y = "residuos studentizados",
+       x = "valores ajustados") +
+  theme_bw()
+  
+  parciales <- residuals(mod1,type="partial")
+plot(defectos$temperatura,parciales[,1]) 
+plot(defectos$densidad,parciales[,2]) 
+  
+  
+  plot1 <- ggplot(data = defectos, aes(temperatura, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  plot2 <- ggplot(data = defectos, aes(densidad, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  grid.arrange(plot1, plot2)
+  
+  #Parece que falla un poquito más la linealidad, pero no se ve claramente la forma
+  
+  library(lmtest)
+    bptest(mod1) 
+    # No hay problema con la homocedasticidad.
+    
+library(ISLR)
+vif(mod1)  # Siguen habiendo problema con la multicolinealidad (lo esperábamos!)
+
+pairs(defectos[,c('temperatura','densidad')])
+cor(defectos[,c('defectuosos','temperatura','densidad')])
+
+# Como soluciones sería mejorar el diseño del experimento o obtener una muestra
+# más grande. En este caso no es posible y lo único que podemos hacer es 
+# eliminar aquella variable que pensamos que está causando el problema: densidad.
+
+
+qqnorm(res_stu)
+qqline(res_stu,col="red")
+
+shapiro.test(res_stu) #No falla la normalidad.
+
+defectos[abs(res_stu) > 3,] # No hay outliers
+
+
+  boxplot(hatvalues(mod1))   
+  
+   plot(fitted(mod1),cooks.distance(mod1),main="Distancia de Cook vs fitted")
+  abline(h=0.33,col="red",lwd=1); 
+  
+  
+  boxplot(cooks.distance(mod1))
+
+   library(car)
+  influencePlot(mod1)
+  summary(influence.measures(mod1)) #tenemos valores influyentes, pero menos que antes.
+```
+
+
+```{r,eval=T}
+# Vamos a definir el nuevo modelo quitando la variable densidad
+mod0 <- lm(defectuosos ~ temperatura+densidad, data=defectos, na.action=na.exclude) 
+summary(mod0)
+mod1 <- lm(defectuosos ~ temperatura, data=defectos, na.action=na.exclude) 
+summary(mod1)
+anova(mod0,mod1) # La variable densidad no es significativa
+# Observamos que el modelo es significativo y la temperatura también (esto era esperable y lo que habríamos obtenido por el método de stepwise)
+
+# Vamos a diagnosticarlo
+
+par(mfrow=c(2,2))
+plot(mod1)
+
+
+res_stu<-rstudent(mod1)
+par(mfrow=c(1,1))
+plot(fitted(mod1),res_stu)
+ abline(h=0, col="gray") 
+
+
+ library(ggplot2)
+  library(gridExtra)
+  ggplot(data = defectos, aes(x =fitted(mod1), y = res_stu)) + 
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  labs(y = "residuos studentizados",
+       x = "valores ajustados") +
+  theme_bw()
+  
+
+  
+  plot1 <- ggplot(data = defectos, aes(temperatura, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  plot2 <- ggplot(data = defectos, aes(densidad, res_stu)) +
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  theme_bw()
+  grid.arrange(plot1, plot2)
+  
+  #No veo un gran problema con la linealidad
+  
+  library(lmtest)
+    bptest(mod1) 
+    # No hay problema con la homocedasticidad.
+    
+#ahora ya no tiene sentido ver la multicolineadidad, dado que solo hay una variable.
+
+
+qqnorm(res_stu)
+qqline(res_stu,col="red")
+
+shapiro.test(res_stu) #No falla la normalidad.
+
+defectos[abs(res_stu) > 3,] # No hay outliers
+
+
+  boxplot(hatvalues(mod1))   
+  
+   plot(fitted(mod1),cooks.distance(mod1),main="Distancia de Cook vs fitted")
+  abline(h=0.33,col="red",lwd=1); 
+  
+  
+  boxplot(cooks.distance(mod1))
+
+   library(car)
+  influencePlot(mod1)
+  summary(influence.measures(mod1)) # los puntos 1 y 17 aparecen como influyentes, pero realmente el 17 afecta a cov.r y prácticamente nada los betas. Vamos a considerar super influyente 1, que está lejos y adejamos afecta a los coeficientes de la regresión
+```
+
+
+```{r,eval=T}
+# Realmente únicamente hemos visto problemas con la linealidad. Vamos a quitar el influyente y ver que tal
+mod0 <- lm(defectuosos ~ temperatura, data=defectos, na.action=na.exclude) 
+summary(mod0)
+defectos2<-defectos[-1,]
+mod1 <- lm(defectuosos ~ temperatura, data=defectos2, na.action=na.exclude) 
+summary(mod1)
+
+# Podemos observar como varían los coeficientes del modelo. Pero no se pueden comparar con los criterios dados, ya que utilizamos diferentes base de datos.
+
+# Vamos a diagnosticarlo
+
+par(mfrow=c(2,2))
+plot(mod1)
+
+
+res_stu<-rstudent(mod1)
+par(mfrow=c(1,1))
+plot(fitted(mod1),res_stu)
+ abline(h=0, col="gray") 
+
+
+ library(ggplot2)
+  library(gridExtra)
+  ggplot(data = defectos2, aes(x =fitted(mod1), y = res_stu)) + 
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  labs(y = "residuos studentizados",
+       x = "valores ajustados") +
+  theme_bw()
+
+  
+  #La linealidad se ve así así, podemos intentar arreglarlo.
+  
+  library(lmtest)
+    bptest(mod1) 
+    # No hay problema con la homocedasticidad.
+    
+qqnorm(res_stu)
+qqline(res_stu,col="red")
+
+shapiro.test(res_stu) #No falla la normalidad.
+
+defectos2[abs(res_stu) > 3,] # Aparece un outlier, el 17
+
+
+  boxplot(hatvalues(mod1))   
+  
+   plot(fitted(mod1),cooks.distance(mod1),main="Distancia de Cook vs fitted")
+  abline(h=0.33,col="red",lwd=1); 
+  
+  
+  boxplot(cooks.distance(mod1))
+
+   library(car)
+  influencePlot(mod1)
+  summary(influence.measures(mod1)) #El punto que era outlier, no es super influyente. Podríamos quitarlo y volver a iterar. Pero como únicamente tenemos "problemas" con la linealidad, vamos a intentar resolverlos en el siguiente ejercicio.
+```
+b) Ajusta un modelo con el que se pretende explicar la relación entre la temperatura y el número medio de defectos, con la información disponible, diagnostica el modelo y evalúa la efectividad de las posibles soluciones.
+
+```{r,eval=T}
+mod1 <- lm(defectuosos ~ temperatura, data=defectos, na.action=na.exclude) 
+summary(mod1)
+# Este modelo ya lo hemos diagnosticado antes. Vamos a ponerle una transformación a ver que tal:
+
+mod2 <- lm(defectuosos ~ I(temperatura^2), data=defectos, na.action=na.exclude) 
+summary(mod2)
+
+AIC(mod1,mod2) #Hemos mejorado un poquito
+
+
+par(mfrow=c(2,2))
+plot(mod2) # Parece que la linealidad en nuestros residuos ha mejorado!
+
+
+res_stu<-rstudent(mod2)
+par(mfrow=c(1,1))
+plot(fitted(mod2),res_stu)
+ abline(h=0, col="gray") 
+
+
+ library(ggplot2)
+  library(gridExtra)
+  ggplot(data = defectos, aes(x =fitted(mod2), y = res_stu)) + 
+  geom_point() + geom_smooth(color = "coral",span=0.4) + geom_hline(yintercept = 0) +
+  labs(y = "residuos studentizados",
+       x = "valores ajustados") +
+  theme_bw()
+
+  
+  library(lmtest)
+    bptest(mod2) 
+    # No hay problema con la homocedasticidad.
+    
+
+
+qqnorm(res_stu)
+qqline(res_stu,col="red")
+
+shapiro.test(res_stu) #Ahora falla la normalidad.
+
+defectos[abs(res_stu) > 3,] # Hay outliers, el punto 21
+
+
+   library(car)
+  influencePlot(mod2)
+  summary(influence.measures(mod2))
+  
+  # Observamos en el mod1 un pequeño problema de linealidad, que podemos arreglar
+  # haciendo una transformación ^2 de la variable explicativa.
+  # Si lo hacemos añadiendo el término cuadrático, nos falla la normalidad y nos
+  # aparece un outlier aunque no muy influyente. .
+```
+

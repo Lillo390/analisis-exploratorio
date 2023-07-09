@@ -1,0 +1,39 @@
+"0","```r
+# Cargamos el fichero de datos
+load(\"./data/iris_tidy.RData\")
+
+# Inspeccionamos el elemento
+str(iris.tidy)
+```"
+"1","'data.frame':	600 obs. of  4 variables:
+ $ Species: Factor w/ 3 levels \"setosa\",\"versicolor\",..: 1 1 1 1 1 1 1 1 1 1 ...
+ $ Part   : chr  \"Sepal\" \"Sepal\" \"Sepal\" \"Sepal\" ...
+ $ Measure: chr  \"Length\" \"Length\" \"Length\" \"Length\" ...
+ $ Value  : num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
+"
+"0","```r
+# Creamos el objetvo iris.grafico1
+iris.grafico1<-ggplot(iris.tidy, aes(x=Species, y=Value))
+
+# Añadimos la capa para el gráfico de dispersión
+iris.grafico1<-iris.grafico1+geom_point()
+
+# Modificamos para añadir la variable Part
+iris.grafico1<-iris.grafico1+aes(color=Part)
+
+# Subdividimos según Measure
+iris.grafico1<-iris.grafico1+ facet_wrap(~ Measure, nrow = 2)
+
+# Quitamos geom_point y añadimos geom_jitter
+iris.grafico1$layers<-NULL
+iris.grafico1<-iris.grafico1+geom_jitter()
+# Ahora la información no se encuentra apilada en una única fila vertical, si no que se apila en forma de barra
+
+# Guardamos en pdf el resultado
+pdf(\"Ejercicio3.pdf\")
+iris.grafico1
+dev.off()
+```"
+"1","RStudioGD 
+        2 
+"

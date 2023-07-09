@@ -1,0 +1,18 @@
+"0","```r
+# Creamos una lista con todos los ficheros leídos y tidy.
+datos<-no_formato()
+
+# Juntamos todos los data.frame en DataTKAII.
+DataTKAII<-datos[[1]][[1]]
+for (i in 2:length(datos)){
+  DataTKAII<-rbind(DataTKAII, datos[[i]][[1]])
+}
+
+datos_adicionales<-comprobacion(datos)
+SamplingFreq<-datos_adicionales[[\"SamplingFreq\"]]
+Units<-datos_adicionales[[\"Units\"]]
+ChannelCount<-datos_adicionales[[\"ChannelCount\"]]
+
+# Guardamos los datos que nos interesan
+save(DataTKAII, SamplingFreq, Units, ChannelCount, file=\"ImportaTKAll.Rdata\")
+```"

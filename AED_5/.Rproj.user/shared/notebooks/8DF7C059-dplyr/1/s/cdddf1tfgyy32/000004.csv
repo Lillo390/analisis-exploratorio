@@ -1,0 +1,3 @@
+"0",""
+"0","Ordenacion4<-arrange(Chicago, desc(pm25tmean2))"
+"0","head(Ordenacion4)"

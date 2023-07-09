@@ -1,0 +1,2 @@
+"0","#Utilizando select"
+"0","head(select(Chicago,1:5))"

@@ -1,0 +1,1 @@
+"0","caja<-boxplot(cerebros$cerebro, col=""skyblue"", frame.plot=F)"

@@ -1,0 +1,4 @@
+"0","ggplot(cars, mapping=aes(x=MPG.city, y=Price))+geom_point()+"
+"0","geom_smooth(method = ""lm"", se=TRUE, level=0.9, formula = y ~ poly(x, 2))+"
+"0","ggtitle(""Diagrama de dispersión, curva=Price~MPG.city+(MPG.city)^2"","
+"0","subtitle=""Confianza al 90%"")"

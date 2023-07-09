@@ -1,0 +1,538 @@
+---
+title: ''
+author: "Carlos Blom-Dahl Ramos y Daniel Lillo Plaza"
+date: "19/12/2022"
+output:
+  pdf_document:
+    number_sections: yes
+    citation_package: natbib
+    toc: no
+  html_document:
+    toc: no
+    df_print: paged
+classoption: 11pt
+#bibliography: ../../bibliografia/bib/prob.bib
+#csl: plain.csl
+header-includes:
+- \usepackage{natbib}
+- \usepackage{color}
+- \usepackage[spanish]{babel}
+- \usepackage{tikz}
+- \usepackage{pgfplots}
+- \usepackage{booktabs}
+- \usepackage{setspace}
+- \definecolor{alizarin}{rgb}{0.89, 0.26, 0.2}
+- "\\definecolor{light-green}{rgb}{0.0, 0.98, 0.6}"
+- \definecolor{alizarin}{RGB}{66,146,198}
+- \definecolor{alizaron}{RGB}{8,48,107}
+- \usepackage{float}
+- \renewcommand{\baselinestretch}{1.09}
+- \usepackage{url}
+- \usepackage{amssymb}
+- \newcommand{\fintarea}{\textcolor{red}{\hfill\rule{3mm}{3mm}\\}}
+- \newcommand{\erre}{\textcolor{darkgray}{\textbf{R }}}
+- \newcommand{\errepunt}{\textcolor{darkgray}{\textbf{R}}}
+- \renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+- \renewcommand {\thesection}{\arabic{section}}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center", out.width = "0.6\\textwidth")
+```
+
+\bigskip
+
+\newpage
+
+\sf
+
+\noindent \textcolor{alizaron}{{\Large \sf Modelos lineales. Máster en Ciencia de Datos. ETSE. Universitat de València}}
+
+\textcolor{alizaron}{{\Large \sf Entregable 2: Modelos de regresión logística}}
+
+\textcolor{alizaron}{{\large \sf Carlos Blom-Dahl Ramos y Daniel Lillo Plaza}}
+
+\textcolor{alizarin}{\rule{170mm}{0.3mm}}
+
+El archivo \verb"diabetes" puedes encontrar variables relacionadas con la mortalidad por diabetes \verb"MORT". En concreto nos interesa trabajar con las siguientes variables como predictoras de la mortalidad.
+
+```{=tex}
+\begin{itemize}
+\item \verb"EDAT": edad actual del paciente
+\item \verb"BMI":  índice de masa corporal
+\item \verb"EDATDIAG": Edad al diagnóstico    
+\item \verb"TABAC":  Hábito tabáquico (tres categorías)
+\item \verb"SBP":  Presión arterial sitólica
+\item \verb"DBP":  Presión arterial diastólica     
+\item \verb"ECG":  Resultado del electrocardiograma (tres categorías) 
+\item \verb"CHD":  Antecedentes cardiacos
+\end{itemize}
+```
+\textcolor{alizarin}{\rule{170mm}{0.3mm}}
+
+\underline{\large{Ejercicio 1:}}
+
+```{=tex}
+\begin{enumerate}
+\item Antes de comenzar, como estamos interesados en aquellos pacientes que han muerto, crea una nueva variable que asigne 1 a muerto y 0 a vivo. Trabajaremos con esta nueva variable para la mortalidad.
+\item Ajustar el modelo para predecir la mortalidad por diabetes en función de los predictores que consideres relevantes y que sean significativos, depurándolo al máximo.
+\item Interpreta los coeficientes del modelo obtenido.
+\item ¿Has conseguido un modelo explicativo? (Es decir, ¿es el modelo adecuado?, ¿ajusta bien?)
+\item Con el modelo final obtenido:
+
+- Calcula el porcentaje de predicciones acertadas usando todos los datos. Para ello, haz la tabla de clasificación correspondiente.
+
+- ¿Quienes tienen más probabilidad de morir, los que tienen ECG normal o ECG frontera?
+
+- Calcula la probabilidad de morir para un paciente de 40 años para los distintos valores de ECG.
+
+\end{enumerate}
+```
+
+```{r lectura}
+# Leemos los datos
+library(readxl)
+diabetes <- read_excel("./data/diabetes.xlsx")
+diabetes$NUMPACIE<-NULL
+diabetes$TABAC<-factor(diabetes$TABAC)
+diabetes$ECG<-factor(diabetes$ECG)
+diabetes$CHD<-factor(diabetes$CHD)
+```
+
+
+```{r 1.1}
+diabetes$MORT<-factor(diabetes$MORT, levels=c("Vivo", "Muerto"), labels=c(0,1))
+str(diabetes)
+```
+
+Antes de proceder a crear los modelos, como el objetivo es crear un clasificador, dividiremos a nuestro conjunto de datos en *train* (que emplearemos para ajustar el modelo) y *test* (que emplearemos para validarlo).
+
+```{r}
+## 80% del tamaño de la muestra
+smp_size <- floor(0.8 * nrow(diabetes))
+
+## fijamos la semilla para hacer el análisis reproducible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(diabetes)), size = smp_size)
+
+train <- diabetes[train_ind, ]
+test <- diabetes[-train_ind, ]
+```
+
+```{r 1.2}
+pacman::p_load(MASS)
+
+# Creamos un modelo mínimo solo con la constante.
+min.model = glm(MORT ~ 1, family=binomial, data = train)
+
+# Creamos un modelo máximo con todas las variables.
+max.model = glm(MORT~ . , family=binomial, data = train)
+
+# Mediante el método stepwise, pudiendo ir hacia delante y hacia detrás,
+# vamos a ir depurando el modelo por minimización del AIC.
+step(max.model,direction="both",
+scope=list(lower=min.model,upper=max.model))
+
+# Guardamos el modelo obtenido en fit1.
+fit1<-glm(formula = MORT ~ EDAT + ECG, family = binomial, data = train)
+fit1.s<-summary(fit1)
+
+# Vamos a considerar ahora otro modelo máximo, en el cual tendremos en cuenta
+# todas las interacciones 2 a 2 entre las variables del modelo.
+max.model2=glm(MORT~ (.)^2 , family=binomial, data = train)
+
+# Mediante stepwise de nuevo, depuramos el modelo nuevamente.
+step(max.model,direction="both",
+scope=list(lower=min.model,upper=max.model2))
+
+# Guardamos el resultado obtenido en fit2.
+fit2<-glm(formula = MORT ~ EDAT + BMI + TABAC + SBP + DBP + ECG + CHD + 
+    SBP:DBP + BMI:TABAC + BMI:SBP + EDAT:CHD, family = binomial, 
+    data = train)
+fit2.s<-summary(fit2)
+fit2.s
+
+anova(fit1, fit2, test="Chisq")
+# Sí que hay diferencia estadística significativa entre fit1 y fit2, por ello
+# tenemos que decantarnos por fit2 pese a que tenga más variables.
+
+# Aunque tenemos variables que no son significativas en fit2, como por ejemplo
+# ECGFrontera, no podemos eliminar las que son de ese estilo ya que la otra
+# caategoría que hemos obtenido sí es significativa y consideramos que la
+# ECG en su conjunto es una variable importante. Nos decantamos por no
+# fusionar las categorías. 
+```
+
+Vamos a pasar ahora a explicar los coeficientes obtenidos en el modelo `fit2`. Recordemos cómo era este modelo.
+```{r}
+fit2.s
+```
+
+Estamos en el siguiente caso:
+
+$$
+(Y|\textbf{X})\sim Ber(p(\textbf{X}))
+$$
+$$
+p(X)=\frac{e^{\beta_0+\beta_1X_1+...+\beta_pX_p}}{1+e^{\beta_0+\beta_1X_1+...+\beta_pX_p}}
+$$
+$$
+logit(p(\textbf{X}))=\ln\left(\frac{p(X)}{1-p(X)}\right)=\beta_0+\beta_1X_1+...+\beta_pX_p
+$$
+
+Es decir, nuestra situación esf:
+
+$$
+\frac{P(MORT=1)}{1-P(MORT=1)}=exp(20.61+0.1\cdot EDAT -1.58\cdot BMI+8.1\cdot TABAC_F-12.59\cdot TABAC_{NF}-0.19\cdot SBP+
+$$
+$$+0.42\cdot DBP-1.05\cdot ECG_F-4.76\cdot ECG_N-12.96\cdot CHD_{Si}-0.002\cdot SBP\cdot DBP-0.34\cdot BMI\cdot TABAC_F+
+$$
+$$
++0.36\cdot BMI\cdot TABAC_{NF}+0.01\cdot BMI\cdot SBP+0.18\cdot EDAT\cdot CHD_{Si})
+$$
+
+Y por último antes de comenzar, aclaremos qué es lo que estamos analizando. Vamos a estudiar cómo varía ese cociente, el cociente de los odds, al aumentar en una unidad una determinada variable.
+
+```{r}
+coef<-coefficients(fit2)
+################# EDAT #################
+# EDAT interactúa de forma significativa con la variable CHD, por lo que 
+# para analizar cómo afecta a la variable respuesta tenemos que estudiar
+# también el valor de CHD (Sí/No en este caso)
+
+# Si estamos en el grupo CHD_No, entonces:
+EDAT_exp<-exp(coef["EDAT"])
+EDAT_exp
+# Cuando aumentamos en una unidad esta variable, el cociente de los odds,
+# p(X)/(1-p(X)), se modifica en 1.112062.
+
+# Si estamos en el grupo CHD_Si, entonces:
+EDAT_CDH_SI_exp<-exp(coef["EDAT"]+coef["EDAT:CHDSi"])
+EDAT_CDH_SI_exp
+# Cuando aumentamos en una unidad esta variable, el cociente de los odds,
+# p(X)/(1-p(X)), se modifica en 1.33739.
+
+# Es decir, tanto si estamos en CHD como si no, al aumentar la edad el cociente 
+# de los odds aumenta, es decir, la proporción de muertes aumenta más que la de
+# vivos bajo las mismas condiciones. Sin embargo, este aumento es más acusado
+# si además estamos en el grupo CHD_Si.
+
+################# BMI  #################
+# BMI interactúa de forma significativa con la variable TABAC y con la variable SBP,
+# por lo que para analizar cómo afecta a la variable respuesta tenemos que estudiar
+# también el valor de TABAC (ex-fumador, fumador y no_fumador en este caso) y SBP
+# (variable numérica).
+
+# Si estamos en el grupo ex-fumador, entonces la variación del cociente de los
+# odds viene dada por:
+# exp(-1.582008+0.01025135 *SBP)=exp(-1.582008)*exp(0.01025135 *SBP)
+
+# Si estamos en el grupo fumador, entonces la variación del cociente de los
+# odds viene dada por:
+# exp(-1.582008-0.3411482+0.01025135*SBP)=exp(-1.923156)*exp(0.01025135*SBP)
+
+# Si estamos en el grupo no-fumador, entonces la variación del cociente de los
+# odds viene dada por:
+# exp(-1.582008+0.3683248+0.01025135*SBP)=exp(-1.213683)*exp(0.01025135*SBP)
+
+# Por lo tanto, las diferencias entre cómo varía el cociente de los odds al 
+# aumentar en una unidad la variable BMI según el grupo de TABAC vienen dadas 
+# por exp(-1.582008)=0.2055619 para el grupo de ex-fumadores, 
+# exp(-1.923156)=0.146145 para el de los fumadores y 
+# exp(-1.213683)=0.297101 en el de los no-fumadores. Por lo tanto,
+# aumentar en una unidad el BMI en cualquiera de estos grupos causará una reducción
+# en el cociente de los odds (una reducción en la proporción de muertos frente a 
+# vivos) pero esta reducción será mayor (se reducirá más) en el grupo de los 
+# fumadores, luego en el de los ex-fumadores y luego en el de los no-fumadores.
+
+# Aunque por supuesto a esto hay que añadir el efecto de SBP, que como podemos ver
+# es exp(0.01025135 *SBP)=1.010304^SBP. Por lo tanto, al aumentar SBP estaremos 
+# aumentando el cociente de los odds, es decir, la proporción de muertos frente
+# a vivos.
+
+################# TABAC  #################
+# Ya hemos comentado lo que ocurre si en los diferentes grupos de TABAC
+# aumentamos en una unidad la variable BMI. Ahora vamos a estudiar cómo
+# varía el cociente de los odds si pasamos de un grupo de TABAC a otro.
+
+# Supongamos que estamos en el grupo de los fumadores y pasamos al de los 
+# ex-fumadores. La diferencia entre las expresiones en los cocientes de los odds,
+# es decir, si cogemos y dividimos el cociente de los odds de los ex-fumadores entre
+# el cociente de los odds de los fumadores, viene dada por: 
+# 1/exp(8.103436-0.3411482*BMI)=exp(0.3411482*BMI)/exp(8.103436)=1.406562^BMI/3294.468.
+# Es decir, si BMI>23.7433 entonces 1.406562^BMI/3294.468>1 y por tanto la 
+# proporción de muertos será mayor que la de vivos. Si por el contrario BMI<23.7433
+# entonces la proporción de muertos será menor que la de vivos al cambiar de grupo.
+
+# Supongamos ahora que estamos en el de los no-fumadores y pasamos al de los
+# fumadores. Análogamente a antes, la diferencia entre las expresiones en los 
+# cocientes de los odds vendrá dada por:
+# exp(8.103436-0.3411482*BMI)/exp(-12.59713 +0.3683248*BMI)=
+# =exp(8.103436+12.59713)/exp((0.3411482+0.3683248)*BMI)=
+# =exp(20.70057)/exp(0.709473*BMI)=977559776/(2.03292^BMI).
+# Tenemos que 977559776/(2.03292^BMI)>=1, es decir, la proporción de muertos
+# será mayor frente a la de vivos, si BMI<29.1774. En caso contrario,
+# la proporción de muertos se verá reducida frente a la de vivos al cambiar de grupo.
+
+################# SBP  #################
+# La variable SBP interactúa significativamente con la variable DBP y con BMI.
+# Veamos qué ocurre al aumentar en una unidad SBP si hacemos la división de los
+# cocientes de los odds sin el +1 (denominador) y con el +1 (numerador):
+# exp(-0.1917253-0.002286931*DBP+0.01025135*BMI)
+# Por lo tanto, dado un DBP, para que exp(-0.1917253-0.002286931*DBP+0.01025135*BMI)>1
+# necesitamos BMI>9.75481×10^-8 (2.28693×10^6 DBP + 1.91725×10^8). Si se cumple 
+# esa condición, entonces la proporción de muertes frente a la de vivos habrá
+# aumentado al aumentar en una unidad SBP. En caso contrario, habrá disminuidp.
+# Por ejemplificarlo un poco, si DBP es 22 entonces necesitamos BMI>23.61
+# para que esto se cumpla.
+
+################# DBP  #################
+# La variable DBP interacúa significativamente con la variable SBP. Estudiemos
+# el cociente como en los casos anteriores:
+# exp(0.4228566-0.002286931*SBP)
+# Por lo tanto, como exp(0.4228566-0.002286931*SBP)>1 si SBP<184.901, en esos casos
+# se producirá un aumento en la proporción de muertes frente a la de vivos al 
+# aumentar en una unidad DBP.
+
+################# ECG  #################
+# Esta variable no presenta interacciones significativas en nuestro modelo, por lo
+# que estudiaremos el efecto individual de pasar de una categoría a otra.
+
+# Supongamos que estamos en ECG anormal y pasamos a normal. Estudiemos cómo varía
+# el cociente:
+exp(-4.766013)
+# Como es menor que 1, la proporción de muertos frente a vivos disminuye al
+# hacer el cambio por un factor de 117.45.
+
+# Supongamos ahora que estamos en ECG normal y pasamos a frontera.
+exp(-1.053956)/exp(-4.766013)
+# Como es mayor que 1, la proporción de muertos frente a vivos aumenta al
+# hacer el cambio por un factor de 40.93793. 
+
+################# CHD  #################
+# La variable CHD presenta interacción con la variable EDAT.
+# Veamos cómo varía el cociente de los odds si pasamos de una categoría de CHS (Si)
+# a la otra (No).
+# 1/exp(-12.95777+0.1845043 *EDAT)
+# Tenemos que es mayor que 1 si EDAT<70.2302, por lo tanto en ese caso al cambiar 
+# del grupo Si al grupo No obtenemos que la proporción de muertos aumenta frente
+# a la de vivos.
+```
+
+
+Veamos si el modelo es explicativo. Para ello usaremos nuestro grupo test del principio, también para comprobar si el modelo está sobreajustado. 
+
+```{r}
+prob <- predict(fit2, newdata = train, type="response")
+prediction<-rep(1, length(prob))
+prediction[prob<0.5]<-0
+sum((prediction-(as.numeric(train$MORT)-1))==0)/length(prob)
+
+# Veamos cuántas acertamos en el grupo test
+prob <- predict(fit2, newdata = test, type="response")
+prediction<-rep(1, length(prob))
+prediction[prob<0.5]<-0
+sum((prediction-(as.numeric(test$MORT)-1))==0)/length(prob)
+```
+
+
+Responderemos a continuación a las preguntas del ejercicio 5. 
+-¿Quienes tienen más probabilidad de morir, los que tienen ECG normal o ECG frontera?
+Como ya hems comentado al analizar los coeficientes, la proporción de muertos frente a vivos aumenta al pasar del grupo ECG normal al grupo ECG frontera por un factor de 40.93793. Por lo tanto, será más probable morir al tener una ECG frontera. 
+
+-Calcula la probabilidad de morir para un paciente de 40 años para los distintos valores de ECG.
+
+```{r}
+# Para poder hacer el cálculo, imputaremos los datos que nos faltan empleando 
+# la media o la moda (según sea numérica o categórica respectivamente) de los
+# hombre de 40 años que tengamos en la base de datos.
+
+indices<-diabetes["EDAT"]==40
+BMI_mean<-mean(diabetes["BMI"][indices])
+TABAC_moda<-"ex-fumador"
+SBP_mean<-mean(diabetes["SBP"][indices])
+DBP_mean<-mean(diabetes["DBP"][indices])
+CHD_moda<-"No"
+
+# Si ECG Anormal
+prob1 <- predict(fit2, newdata = data.frame("EDAT"=40, "ECG"="Anormal", 
+                                            "BMI"=BMI_mean, "TABAC"=TABAC_moda, "SBP"=SBP_mean, "DBP"=DBP_mean, "CHD"=CHD_moda), type="response")
+prob1
+
+# Si ECG Frontera
+prob2 <- predict(fit2, newdata = data.frame("EDAT"=40, "ECG"="Frontera", 
+                                            "BMI"=BMI_mean, "TABAC"=TABAC_moda, "SBP"=SBP_mean, "DBP"=DBP_mean, "CHD"=CHD_moda), type="response")
+prob2
+
+# Si ECG Normal
+prob3 <- predict(fit2, newdata = data.frame("EDAT"=40, "ECG"="Normal", 
+                                            "BMI"=BMI_mean, "TABAC"=TABAC_moda, "SBP"=SBP_mean, "DBP"=DBP_mean, "CHD"=CHD_moda), type="response")
+prob3
+```
+
+
+\underline{\large{Ejercicio 2:}} Imagina que ahora estamos interesados en la variable \verb"TABAC". Realiza un análisis discriminante completo (considerando las variables adecuadas). Comprueba si se cumplen las condiciones de aplicabilidad.
+
+\textcolor{alizarin}{\rule{170mm}{0.3mm}}
+
+
+```{r}
+n <- nrow(train)
+m <- nrow(test)
+# Veamos a priori que sucede gráficamente
+
+library(ggplot2)
+library(ggpubr)
+
+
+plot1 <- ggplot(data = train, aes(x = TEMPSVIU)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+plot2 <- ggplot(data = train, aes(x = EDAT)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+plot3 <- ggplot(data = train, aes(x = BMI)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+plot4 <- ggplot(data = train, aes(x = EDATDIAG)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+plot5 <- ggplot(data = train, aes(x = SBP)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+plot6 <- ggplot(data = train, aes(x = DBP)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+
+# la función grid.arrange del paquete grid.extra permite ordenar
+# graficos de ggplot2
+
+library(gridExtra)
+ggarrange(plot1, plot2, plot3, plot4,plot5, plot6,  common.legend = TRUE)
+```
+Primero nos damos cuenta que en la gráfica DBP existen dos valores muy alejados, si nos detenemos en estos datos, encontramos que 2 personas tienen una presión arterial diastólica de $862$ y $802$, estos valores son claramente un error en la toma de los datos ya que un valor de $200$ ya sería increíblemente inverosímil. Por este motivo procedemos a eliminar ambas entradas.
+
+```{r}
+library(dplyr)
+train <- train %>% filter(DBP!=862) %>% filter(DBP!=802)
+```
+
+Ahora volvamos a crear los gráficos de densidad otra vez.
+
+```{r}
+plot1 <- ggplot(data = train, aes(x = TEMPSVIU)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+plot2 <- ggplot(data = train, aes(x = EDAT)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+plot3 <- ggplot(data = train, aes(x = BMI)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+plot4 <- ggplot(data = train, aes(x = EDATDIAG)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+plot5 <- ggplot(data = train, aes(x = SBP)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+plot6 <- ggplot(data = train, aes(x = DBP)) +
+  geom_density(aes(colour = TABAC)) + theme_bw()
+
+# la función grid.arrange del paquete grid.extra permite ordenar
+# graficos de ggplot2
+
+library(gridExtra)
+ggarrange(plot1, plot2, plot3, plot4,plot5, plot6,  common.legend = TRUE)
+```
+
+Estas gráficas ya nos hacen dudar de la precisión que obtenedremos con un clasificador lda ya que no tenemos ninguna variable que esté formada por 3 normales con misma covarianza que separen claramente los 3 grupos. La variable más prometedora parece EDATDIAG, la cual separa el grupo ex-fumador de los otros dos. Veamos ahora las correlaciones lineales entre las diferentes variables.
+
+```{r}
+pairs(x = train[, c("TEMPSVIU","EDAT","BMI","EDATDIAG","SBP","DBP")],
+      col = c("1", "2","3")[train$TABAC], pch = 19)
+```
+
+En estas gráficas de correlación vemos que los datos no son muy separables linealmente. Además podemos observar algunas variables que están correlacionadas como EDAT y EDATDIAG o en menor medida SBP y DBP.
+
+
+Ahora vamos a crear un modelo lda con todas las variables anteriores. 
+
+```{r}
+library(MASS)
+#### en el train
+m_lda_1 <- lda(TABAC ~ TEMPSVIU+EDAT+BMI+EDATDIAG+SBP+DBP, data=train)
+predLDA<-predict(m_lda_1, newdata=train)
+t<-table(train$TABAC, predLDA$class, dnn = c("Clase real", "Clase predicha"))
+t
+100*sum(diag(t))/n
+```
+
+Obtenemos así una precisión en el grupo train del $55\%$ aproximadamente. Esta precisión es bastante baja, pero veamos que está ocurriendo en el grupo de test.
+
+```{r}
+#### en el test
+m_lda_1 <- lda(TABAC ~ TEMPSVIU+EDAT+BMI+EDATDIAG+SBP+DBP, data=train)
+predLDA<-predict(m_lda_1, newdata=test)
+t<-table(test$TABAC, predLDA$class, dnn = c("Clase real", "Clase predicha"))
+t
+100*sum(diag(t))/m # Aquí simplemente vemos cuantos hemos "acertado". Es decir,
+# que precisión tenemos
+```
+Obtenemos así una precisión del aproximadamente $43\%$. Estos resultados son bastante malos, obtenemos una precisión muy baja para ambos conjuntos (train y test). Esto ya nos dice que el modelo no es muy prometedor pero vamos a intentar eliminar alguna variable que peda mejorar el resultado. 
+
+Primero, de las gráficas de correlación deducimos que EDATDIAG y EDAT están muy correlacionadas, por eso, tomaremos solamente una de estas variables. Viendo que realmente ninguna de las gráficas de correlación sirve para separar de forma clara los 3 grupos vamos a quedarnos con EDATDIAG, ya que su densidad según la variable TABAC es más parecido a 3 normales con diferente media y misma covarianza.
+
+```{r}
+m_lda_2 <- lda(TABAC ~ TEMPSVIU+EDATDIAG+BMI+SBP+DBP, data=train)
+predLDA<-predict(m_lda_2, newdata=test)
+t<-table(test$TABAC, predLDA$class, dnn = c("Clase real", "Clase predicha"))
+t
+100*sum(diag(t))/m
+```
+
+Hemos empeorado considerablemente el modelo para el conjunto de test, con lo que deducimos que no deberíamos eliminar la variable EDAT. Vamos a probar a eliminar EDATDIAG en lugar de EDAT. 
+
+```{r}
+m_lda_3 <- lda(TABAC ~ TEMPSVIU+EDAT+BMI+SBP+DBP, data=train)
+predLDA<-predict(m_lda_3, newdata=test)
+t<-table(test$TABAC, predLDA$class, dnn = c("Clase real", "Clase predicha"))
+t
+100*sum(diag(t))/m
+```
+
+Como cabía esperar obtenemos un resultado parecido a eliminar EDAT por su alta correlación. Por tanto no podemos eliminar ninguna de estas variables.
+
+Probemos a eliminar una de las variables SBP o DBP del modelo original ya que existe cierta correlación lineal entre ellas. Vamos a probar a quedarnos con SBP por los mismo motivos de antes (las densidades de DBP tienen aproximadamente el mismo centro y covarianzas muy diferentes). 
+
+```{r}
+m_lda_4 <- lda(TABAC ~ TEMPSVIU+EDAT+EDATDIAG+SBP, data=train)
+predLDA<-predict(m_lda_4, newdata=test)
+t<-table(test$TABAC, predLDA$class, dnn = c("Clase real", "Clase predicha"))
+t
+100*sum(diag(t))/m
+```
+
+Volvemos a perder precisión (aunque poca). Podemos probar a eliminar SBP en lugar de DBP, y obtenemos:
+
+```{r}
+m_lda_5 <- lda(TABAC ~ TEMPSVIU+EDAT+BMI+DBP+EDATDIAG, data=train)
+predLDA<-predict(m_lda_5, newdata=test)
+t<-table(test$TABAC, predLDA$class, dnn = c("Clase real", "Clase predicha"))
+t
+100*sum(diag(t))/m
+```
+Hemos aumentado algo la precisión del grupo test. Por tanto vamos a quedarnos con el modelo TABAC ~ TEMPSVIU + EDAT + BMI + DBP + EDATDIAG. Parece que nuestro modelo no es capaz de distinguir cuando se trata de un no fumador.
+
+
+Dicho esto veamos si se cumplen las hipótesis de normalidad. 
+
+
+```{r}
+library(MVN)
+royston_test <- mvn(data = train[,c('TEMPSVIU','EDAT', 'BMI', 'DBP', 'EDATDIAG')], 
+                    mvnTest = "royston", multivariatePlot = "qq")
+royston_test$multivariateNormality
+royston_test$univariateNormality
+```
+
+Obtenemos que no se cumple la condición de normalidad para ninguna variable de nuestro modelo. Además también vemos que tampoco se puede asumir normalidad en la variable conjunto. 
+
+```{r}
+## Igualdad de matrices de covarianza
+
+library(biotools)
+boxM(data =train[,c('TEMPSVIU','EDAT', 'BMI', 'DBP', 'EDATDIAG')], 
+     grouping = train$TABAC) #se rechaza
+```
+Obtenemos un p-valor significativo y por tanto rechazamos la hipótesis de homogeneidad de matrices de covarianza. 
+
+Es decir, acabamos de ver que no se cumple ninguna de las hipótesis necesarias para aplicar el modelo lda, esto explica en cierta forma los malos resultados obtenidos durante la definición del modelo. Dicho esto, no tiene sentido intentar ajustar un modelo cuadrático ya que las hipótesis de normalidad son las mismas para este modelo. 

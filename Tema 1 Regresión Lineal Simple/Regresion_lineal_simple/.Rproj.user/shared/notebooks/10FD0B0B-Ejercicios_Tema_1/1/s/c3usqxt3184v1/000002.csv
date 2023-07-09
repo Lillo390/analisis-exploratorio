@@ -1,0 +1,5 @@
+"0","predict25<-predict(fit1, 25)
+"
+"2","Error in model.frame.default(Terms, newdata, na.action = na.action, xlev = object$xlevels) : 
+  'data' must be a data.frame, environment, or list
+"

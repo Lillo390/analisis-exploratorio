@@ -1,0 +1,21 @@
+"0","```r
+# Cargamos el fichero
+load(\"./data/weatherAUS.RData\")
+
+# Creamos el objeto ggplot grafico1
+grafico1<-ggplot(ds, aes(x=MinTemp, y=MaxTemp))
+
+# Añadimos la capa del gráfico de dispersión
+grafico1+geom_point()
+
+# Construimos grafico2
+grafico2<-ggplot(ds, aes(x=MinTemp, y=MaxTemp, color=RainTomorrow))+geom_point()
+
+# Construimos grafico3
+grafico3<-grafico2+ggtitle(label=\"Lluvias en EE.UU. según la temperatura\")
+
+# Guardamos en pdf el resultado
+pdf(\"Ejercicio1.pdf\")
+grafico3
+dev.off()
+```"

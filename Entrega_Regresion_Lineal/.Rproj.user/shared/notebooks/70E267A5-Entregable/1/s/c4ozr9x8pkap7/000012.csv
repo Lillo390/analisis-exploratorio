@@ -1,0 +1,4 @@
+"0","par(mfrow=c(2,3))"
+"0","for (i in 1:5){"
+"0","  plot(aj_step5, which=i)"
+"0","}"

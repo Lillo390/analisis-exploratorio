@@ -1,0 +1,155 @@
+---
+title: "Tarea XXXXXX"
+subtitle: Análisis Exploratorio de Datos, Máster en Ciencia de Datos- UV
+author: "XXXXXXXXXXXXXXX"
+#Pone la fecha de generación del documento
+date:  "`r Sys.Date()`"  #Pondría la fecha del día actual
+# Para que en lugar de "Contents" ponga "Indice" al incluir la tabla de contenido
+
+params:
+  lang: ES
+lang: "`r switch(params$lang, ES = 'es-ES', EN = 'en-US')`"
+
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+  html_notebook:
+    echo: yes
+    number_sections: yes
+    toc: yes
+  html_document:
+    echo: yes
+    number_sections: yes
+    theme: lumen
+    toc: yes
+language:
+  label:
+    fig: 'Figura '
+    tab: 'Tabla '
+    eq: 'Ecuación '
+    thm: 'Teorema '
+    lem: 'Lema '
+    def: 'Definición '
+    cor: 'Corolario '
+    prp: 'Proposición '
+    exm: 'Ejemplo '
+    exr: 'Ejercicio '
+    proof: 'Demostración. '
+    remark: 'Nota: '
+    solution: 'Solución. '
+
+---
+
+
+---
+
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+# CONFIGURACIÓN GENERAL
+library(knitr)
+options(width = 100)
+# Opciones generales chunks
+opts_chunk$set(echo=T,message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = './figure/')
+
+#options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+  
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+#knit_hooks$set(plot = knitr:::hook_plot_html)
+```
+
+
+# Introducción.
+
+El objetivo de esta tarea es  ... bla bla bla
+
+# Apartado. Instalación de paquetes
+
+Incluimos todas las librerías necesarias para la ejecucion del código en la siguiente lista. **packages = c("tidyverse","knitr",...)**
+
+Si la librería no está instalada se instalará y cargará, sino solo se cargará.
+
+
+
+
+```{r}
+# Especificamos las librerías necesarias en esta lista
+
+packages = c("tidyverse","knitr")
+
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed and loaded
+package.check <- lapply(packages, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+#verify they are loaded
+search()
+
+```
+
+# Apartado. Crea un proyecto.
+
+Para cada tarea crea un nuevo proyecto con, al menos, una carpeta *./data*, que contenga los datos y otra **./figure** (puedes usar carpetas adicionales para organizar la información **./program**, etc)
+ 
+
+```{r}
+
+
+
+```
+
+## Subapartado. Rutas locales
+
+Usa siempre rutas referidas a la carpeta, en la que se encuentra el fichero fuente, y siempre rutas **relativas** a dicha ubicación. Ejemplos
+
+**ruta1<-'data/tabla1.txt'**  : el fichero está en la carpeta datos que cuelga del directorio donde está el código. (Es equivalente a **ruta1<-'data/tabla1.txt'**)
+
+**ruta2<-'./data/tabla1.txt'** : el fichero está en la carpeta datos que cuelga de un nivel superior
+
+**ruta3<-'../data/tabla1.txt'** : el fichero está en la carpeta datos que cuelga de dos niveles superiores
+
+**ruta4<-'./../data/tabla1.txt'** : el fichero está en la carpeta datos que cuelga de tres niveles superiores
+
+ruta5<-'C:/MisDatos/Ej.txt'  **NO USAR NUNCA UNA RUTA ABSOLUTA COMO  ESTA**
+```{r}
+
+
+
+```
+
+### Subsubapartado. Como incluir figuras
+
+
+
+```{r rmarkdown, echo=FALSE, out.width='30%', fig.align='center', fig.cap='Logo ETSE (desde archivo PNG).'}
+knitr::include_graphics("figure/logoETSE.png")
+```
+### Subsubapartado. La numeración es automática
+```{r rmarkdown2, echo=FALSE, out.width='10%', fig.align='center', fig.cap='Logo GCD (desde archivo pdf).'}
+knitr::include_graphics("figure/logoGCD.pdf")
+```
+
+
+# Parte II
+
+
+```{r}
+
+
+
+```
+
+
+

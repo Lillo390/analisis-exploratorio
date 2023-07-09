@@ -1,0 +1,2 @@
+"0","d7<-Chicago%>%select(-c(""date"", ""city"", ""pm10tmean2""))"
+"0","d7"

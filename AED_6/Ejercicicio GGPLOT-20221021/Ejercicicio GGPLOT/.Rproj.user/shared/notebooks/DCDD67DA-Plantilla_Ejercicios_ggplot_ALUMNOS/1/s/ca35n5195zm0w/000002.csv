@@ -1,0 +1,33 @@
+"0","```r
+# Cargamos el fichero de datos y lo examinamos
+load(\"./data/Ejercicio4_Data.Rdata\")
+str(DatosEjer4)
+```"
+"1","'data.frame':	200 obs. of  3 variables:
+ $ Fecha     : Date, format: \"2002-01-01\" ...
+ $ Fabricante: Factor w/ 2 levels \"Microsoft\",\"Apple\": 1 1 1 1 1 1 1 1 1 1 ...
+ $ Ventas    : num  75 67.1 75.5 77.4 68.1 ...
+"
+"0","```r
+# Fecha vs ventas
+g2<-ggplot(DatosEjer4, aes(x=Fecha, y=Ventas, color=Fabricante))+geom_point()
+# Sí que es un gráfico válido, pero como el tiempo es una varibale continua sería más adecuado una representación medainte una línea antes que puntos
+
+# Añadimos una línea que una los puntos
+g2<-g2+geom_line()
+
+
+# Cambiamos el tipo de línea
+g2<-g2+aes(linetype=Fabricante)
+
+# Añadimos el título
+g2<-g2+ggtitle(label=\"Ventas de compañías tecnológicas\")
+
+# Guardamos en pdf el resultado
+pdf(\"Ejercicio4.pdf\")
+g2
+dev.off()
+```"
+"1","null device 
+          1 
+"

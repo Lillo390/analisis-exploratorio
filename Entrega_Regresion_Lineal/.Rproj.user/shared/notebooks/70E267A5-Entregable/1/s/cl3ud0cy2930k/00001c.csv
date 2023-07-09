@@ -1,0 +1,2 @@
+"0","plot(cars$Price~cars$MPG.city, ylim=c(0,65),"
+"0","main=""Datos reales"",ylab=""Precio"", xlab=""MPG.city"")"

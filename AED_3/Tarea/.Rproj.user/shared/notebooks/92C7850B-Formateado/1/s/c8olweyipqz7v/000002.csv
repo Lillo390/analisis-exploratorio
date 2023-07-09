@@ -1,0 +1,4 @@
+"0","```r
+fert <- read_csv(\"data/children_per_woman_total_fertility.csv\")
+mort <- read_csv(\"data/child_mortality_0_5_year_olds_dying_per_1000_born.csv\")
+```"

@@ -1,0 +1,158 @@
+---
+title: "Tarea TidyR"
+subtitle: Análisis Exploratorio de Datos, Máster en Ciencia de Datos- UV
+author: "Daniel Lillo Plaza"
+#Pone la fecha de generación del documento
+date:  "`r Sys.Date()`"  #Pondría la fecha del día actual
+# Para que en lugar de "Contents" ponga "Indice" al incluir la tabla de contenido
+
+params:
+  lang: ES
+lang: "`r switch(params$lang, ES = 'es-ES', EN = 'en-US')`"
+
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+  html_notebook:
+    echo: yes
+    number_sections: yes
+    toc: yes
+  html_document:
+    echo: yes
+    number_sections: yes
+    theme: lumen
+    toc: yes
+language:
+  label:
+    fig: 'Figura '
+    tab: 'Tabla '
+    eq: 'Ecuación '
+    thm: 'Teorema '
+    lem: 'Lema '
+    def: 'Definición '
+    cor: 'Corolario '
+    prp: 'Proposición '
+    exm: 'Ejemplo '
+    exr: 'Ejercicio '
+    proof: 'Demostración. '
+    remark: 'Nota: '
+    solution: 'Solución. '
+
+---
+
+
+---
+
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+# CONFIGURACIÓN GENERAL
+library(knitr)
+options(width = 100)
+# Opciones generales chunks
+opts_chunk$set(echo=T,message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = './figure/')
+
+#options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+  
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+#knit_hooks$set(plot = knitr:::hook_plot_html)
+```
+
+
+# Introducción.
+
+El objetivo de esta tarea es  practicar la obtención de formatos de datos *tidy* a partir de datos no estructurados.
+
+# Paquetes y librerías necesarios.
+
+Incluimos todas las librerías necesarias para la ejecucion del código en la siguiente lista. **packages = c(tidyr","knitr",...)**
+
+Si la librería no está instalada se instalará y cargará, si no, solo se cargará.
+
+```{r}
+# Especificamos las librerías necesarias en esta lista
+
+packages = c("tidyr","knitr", "dplyr")
+
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed and loaded
+package.check <- lapply(packages, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+#verify they are loaded
+search()
+
+```
+
+# Tarea.
+
+En la librería tidyr hay varios data frame de datos:
+`table1, table2, table3, table4a, table4b, table5`.
+`Table1`, presenta una estructura de datos “tidy”, pero el resto no.
+
+Escribe un proyecto basado en el proyecto plantilla que realice las siguientes
+tareas:
+
+1.    Observa la estructura de todos los data frames y determina qué tipo de
+anomalía presenta para considerarlo un fichero “tidy”.
+
+```{r, echo=FALSE}
+kable(table1, caption="Table1")
+kable(table2, caption="Table2")
+kable(table3, caption="Table3")
+kable(table4a, caption="Table4a")
+kable(table4b, caption="Table4b")
+kable(table5, caption="Table5")
+```
+
+Observamos que `table2` no es tidy
+
+2.    Obtén table1 a partir de table2.
+
+```{r}
+table2_new<-pivot_wider(table2, names_from="type", values_from="count")
+
+kable(table2_new)
+```
+
+3.    Obtén table1 a partir de table3.
+
+```{r}
+table3_new<-separate(table3, rate, c("cases", "population"), sep="/")
+
+kable(table3_new)
+```
+
+4.    Obtén table1 a partir de table4a y table4b.
+
+```{r}
+table4a_new<-pivot_longer(table4a, names_to="year", values_to="cases", cols=c(2,3))
+
+table4b_new<-pivot_longer(table4b, names_to="year", values_to="population", cols=c(2,3))
+
+table4ab_new<-full_join(table4a_new, table4b_new)
+
+kable(table4ab_new)
+```
+
+5.    Obtén table1 a partir de table5.
+
+```{r}
+table5_new<-unite(table5, year, century, year, sep="")
+table5_new<-separate(table5_new, rate, c("cases", "population"), sep="/")
+
+kable(table5_new)
+```
+

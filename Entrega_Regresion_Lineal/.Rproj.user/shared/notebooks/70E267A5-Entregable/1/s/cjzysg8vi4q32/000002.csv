@@ -1,0 +1,29 @@
+"0","library(dplyr)"
+"2","
+Attaching package: ‘dplyr’
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+"
+"0","library(MASS)"
+"2","
+Attaching package: ‘MASS’
+
+"
+"2","The following object is masked from ‘package:dplyr’:
+
+    select
+
+"
+"0","cars_prueba5<-cars_prueba4%>%filter(Price<61.9)"
+"0",""
+"0","aj_step6 <- lm(formula = Price ~ Type + Horsepower + RPM + Wheelbase + Width + Origin, data = cars_prueba5)"
+"0","boxcox(aj_step6, lambda = seq(-1,1, length = 10))"

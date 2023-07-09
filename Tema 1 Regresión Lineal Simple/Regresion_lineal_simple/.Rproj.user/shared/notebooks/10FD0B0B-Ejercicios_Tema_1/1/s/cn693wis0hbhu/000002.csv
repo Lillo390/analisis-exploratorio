@@ -1,0 +1,8 @@
+"0","minx<-range(deportistas$PrctGrasa)[1]"
+"0","maxx<-range(deportistas$PrctGrasa)[2]"
+"0",""
+"0","nuevos <- data.frame(list(PrctGrasa = seq(minx,maxx,length=100)))"
+"0","bandas_est<-predict(fit1, newdata = nuevos, interval = ""confidence"")"
+"0",""
+"0","plot(deportistas$PrctGrasa, deportistas$Peso, col='BLUE', xlab=""PrctGrasa"", ylab=""Peso"","
+"0","     main=""Deportistas"")"

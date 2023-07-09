@@ -1,0 +1,2 @@
+"0","ExclusionFilter2<-filter(Chicago,pm25tmean2 > 30 & tmpd > 80)"
+"0","head(ExclusionFilter2)"

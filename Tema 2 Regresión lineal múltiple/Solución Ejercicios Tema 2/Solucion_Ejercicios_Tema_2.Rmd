@@ -1,0 +1,532 @@
+---
+title: "Solución Ejercicios Tema 2. Regresión lineal múltiple."
+subtitle: "Máster en Ciencia de Datos. Módulo: Análisis exploratorio de datos"
+author: "Ana Navarro Quiles"
+date: "Curso 2022/2023"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE,message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Ejercicio 1
+Antes de que comience la construcción de un puente se pasa por una serie de etapas de producción, entre las que destaca su diseño. Esta fase se compone a su vez de varias actividades, por lo que suele ser de interés la predicción del tiempo de diseño a nivel de planificación presupuestaria. En el fichero **puentes** hay información sobre los proyectos de construcción de 45 puentes. A partir de dicha información trata de valorar el tiempo _Time_ que se tarda en diseñar un puente en base a:
+
+* Superficie de cubierta de puente (en miles de pies cuadrados), variable _DArea_
+* Coste de construcción (en miles de dólares), variable _CCost_
+* Número de planos estructurales, variable _DWGS_
+* Longitud del puente (en pies), variable _Length_
+* Número de tramos, variable _Spans_
+
+Realiza el análisis indicando con todo detalle las características del modelo que vayas a emplear, las suposiciones que has de hacer y la validez de tus conclusiones. Con el modelo elegido responde a las siguientes preguntas
+
+```{r,echo=T}
+load('datosTema2.Rdata')
+```
+
+```{r,eval=T}
+# Primero debemos eliminar la columna case, dado que no es una variable.
+puentes2<-subset(puentes,select = c(-Case))
+mod1 <- lm(Time ~ ., data=puentes2, na.action=na.exclude) 
+summary(mod1)
+```
+
+
+```{r,eval=T}
+# Varias formas de resolver el ejercicio.
+
+# Primera: Quitando variables una a una teniendo en cuenta el p-valor.
+mod2<-update(mod1,~.-DArea)
+summary(mod2)
+mod3<-update(mod2,~.-CCost)
+summary(mod3)
+mod4<-update(mod3,~.-Length)
+summary(mod4)
+
+# Segunda forma de hacerlo:
+modf <- step(mod1, direction = 'both',trace=0) 
+summary(modf)
+
+# Ambas formas nos ha dado el mismo resultado. Time ~ Dwgs + Spans
+```
+```{r,eval=T}
+# En este punto podemos plantearnos si el intercept es significativo o no
+
+modf_SinInter <- update(modf,~.-1)
+summary(modf_SinInter)
+
+AIC(modf,modf_SinInter)
+# Hemos ganado R^2 sin el intercepto, pero el AIC es mayor considerándolo. 
+
+# - El R^2 te dice como de explicativo es tu modelo. Es decir, que % de variabilidad 
+# de la variable Y queda explicado por el modelo.
+# - El AIC es una medida de lo bien que el modelo se ajustará a nuevos datos, no a los datos existentes. Un AIC más bajo significa que un modelo debería mejorar la predicción.
+# Imaginad que estamos tratando de predecir la salida a partir de algunas variables conocidas. Si se añaden variables de ruido al ajuste, aumentará el R^2 (siempre vas a explicar más, aunque sea por poco), pero también disminuirá el poder de predicción del modelo. Por lo tanto, el modelo con variables de ruido tendrá un mayor R^2 y un mayor AIC.
+# Si queréis profundizar en ambos criterios os recomiendo el libro:
+# Introduction to Statistical Learning with R 
+# Lo dejo en el aula virtual
+
+# Por tanto, depende de los fines de vuestra regresión (explicativos o predictivos)
+# eligiremos un método u otro para su comparación.
+
+# En este caso voy a resolver el problema considerando el Intercepto (modf) dado
+# que es el que me daba el comando step directamente y el que menos AIC tiene.
+
+# Sobre el Intercept: En general no es recomendable eliminar el Intercepto (a no ser que tengamos una razón teórica o de interpretación de resultados que te obligue a ponerlo cero) dado que si lo hacemos cero los residuos ya no tendrían media 0 (y todo nuestro razonamiento se basa en que los residuos tienen media 0) y las demás estimaciones se vuelven sesgadas.
+# Por ejemplo, al hacer el Intercepto = 0 cambia la escala por completo y puede ser que 
+# el R^2 sea mayor por que la nube de puntos está muy lejana (algo similar a lo que pasa con los influyentes). Aunque el R^2 es mayor, las predicción no va a ser igual de fiable.
+# Hay casos particulares que puede ser interesante observar que sucede al forzarlo cero (por ejemplos con las variables categóricas), pero en general vamos a dejarlo.
+```
+
+
+a) ¿Cuál es el porcentaje de varianza explicada por tu modelo?¿Qué variables son relevantes?
+
+70.82%. Dwgs y Spans.
+
+b) ¿Cuál será el tiempo estimado según tu modelo para la construcción de un puente con los predictores en su valor promedio?¿Y cuál sería el intervalo de confianza para el promedio de tiempo predicho? ¿Y si se trata de un nuevo puente?
+```{r,eval=T}
+x0 <- data.frame(Dwgs=mean(puentes2$Dwgs), Spans=mean(puentes2$Spans))
+predict(modf,newdata=x0,interval='confidence') # IC
+predict(modf,newdata=x0,interval='prediction') #nuevo puente
+```
+
+c) Uno de los constructores indica que, en su experiencia, se tarda lo mismo en construir un puente de 1,2 o 3 tramos, y algo más en construir puentes de más de tres tramos ¿Podrías construir un modelo de regresión para comprobar la hipótesis del constructor ?¿Te parece acertada dicha hipótesis en función de la bondad de ajuste?
+
+```{r,eval=T}
+# Vamos a hacer las 4 categorías (1,2,3, y más de 3 (hasta el 7 que es el máximo))
+puentes2$Spans_c<-cut(puentes2$Spans, breaks=c(0,1,2,3,7))
+puentes3<-subset(puentes2,select = c(-Spans))
+mod1c <- lm(Time ~ ., data=puentes3, na.action=na.exclude) 
+summary(mod1c)
+
+mod2c<-update(mod1c,~.-DArea)
+summary(mod2c)
+
+mod3c<-update(mod2c,~.-CCost)
+summary(mod3c)
+
+mod4c<-update(mod3c,~.-Length)
+summary(mod4c)
+# Vemos que en la variable dummy, el único factor significativo es el de (3,7)
+```
+
+
+
+```{r,eval=T}
+# otra forma de hacerlo
+puentes2$Spans_2c<-factor(puentes2$Spans)
+puentes3<-subset(puentes2,select = c(-Spans,-Spans_c))
+mod1c <- lm(Time ~ ., data=puentes3, na.action=na.exclude) 
+summary(mod1c)
+
+mod2c<-update(mod1c,~.-DArea)
+summary(mod2c)
+
+mod3c<-update(mod2c,~.-CCost)
+summary(mod3c)
+
+mod4c<-update(mod3c,~.-Length)
+summary(mod4c)
+# Y vemos que los tramos 5 y 6 son significativos. Cuidado con quitar el intercepto.
+# Vemos que con estos factores el R^2 ajustado es menor que el anterior, dado que hemos introducido más variables (aunque sean de tipo dummy) en el modelo.
+````
+
+```{r,eval=T}
+# Veamos que sucede si quito el intercepto en este caso:
+mod4c_Sin<-update(mod3c,~.-Length-1)
+summary(mod4c_Sin)
+# Como se puede observar lo que estaba en el intercepto pasa a ser lo que se indica en la primera categoria (Span_2c1). La interpretación en este caso es la misma. Por ejemplo, si queremos interpretar Spans_2c2 en el modelo con intercepto hay que sumar 7.25-34. En el modelo sin intercepto pone directamente -26.
+
+# Fijaros que ahora sale que ninguna categoría de Span es significativa, esto se debe a que hemos restado a todas 34. Entonces 81 que estaba "lejos" del cero, ahora no está tan lejos y por tanto no podemos rechazar que sea cero con el error que estamos cometiendo.
+```
+
+
+```{r,eval=T}
+puentes2$Spans_2c<-cut(puentes2$Spans, breaks=c(0,3,7))
+puentes4<-subset(puentes2,select = c(-Spans,-Spans_c))
+mod1c <- lm(Time ~ ., data=puentes4, na.action=na.exclude) 
+summary(mod1c)
+
+mod2c<-update(mod1c,~.-DArea)
+summary(mod2c)
+
+mod3c<-update(mod2c,~.-CCost)
+summary(mod3c)
+
+mod4c<-update(mod3c,~.-Length)
+summary(mod4c)
+# Y vemos que la categoria >3 es significativa. Cuidado con quitar el intercepto
+# cambiarían los resultados por completo.
+```
+## Ejercicio 2
+
+En el banco de datos **diabetes**, que contiene datos sobre la mortalidad por dicha enfermedad se pretende estudiar el efecto del hábito tabáquico _TABAC_ sobre la edad de diagnóstico de la diabetes _EDATDIAG_ . Justifica la elección de variables explicativas de entre las disponibles:
+
+* Mortalidad por diabetes, variable _MORT_
+* Tiempo de vida en meses tras el diagnóstico, variable _TEMPSVIU_
+* Edad del paciente, variable _EDAT_
+* Índice de masa corporal, variable _BMI_
+* Resultado del electrocardiograma, variable _ECG_
+* Antecedentes coronarios, variable _CHD_
+* Presión arterial sistólica y diastólica, variables _SBP_ y _DBP_, respectivamente
+
+```{r,eval=T}
+# Quitamos las variables que sabemos que no son necesarias
+diabetes2<-subset(diabetes,select = c(-NUMPACIE,-MORT))
+```
+
+
+a)  Ajusta un modelo simple para contestar la pregunta de investigación.  Indica la bondad del ajuste e interpreta el efecto. 
+
+```{r,eval=T}
+mod1 <- lm(EDATDIAG ~ TABAC, data=diabetes2, na.action=na.exclude) 
+summary(mod1)
+# Se espera que el tiempo promedio de diagnóstico en no fumadores sea 48.50877
+
+# Si tenemos dos pacientes se espera que el tiempo promedio de la edad de diagnóstico del que fuma sea 0.979 veces mayor que el que no fuma. (Es decir la edad promedio dediagnóstico del que fuma es 0.979 años más del que no fuma). Aunque el p-valor es grande, por lo que este aumento no es significativo.
+
+# Si tenemos dos pacientes se espera que el tiempo promedio de la edad de diagnóstico del exfumador sea 8.156 veces más pequeño que el que no fuma.(Es decir la edad promedio de  diagnóstico del exfumador es 8.156 años menos del que no fuma)
+
+# En este caso la bondad de ajuste es de 0.1259. Es decir, el 12.59% de variabilidad de la edad de diagnóstico está explicado por el modelo de regresión. En este caso, por la variable TABAC.
+```
+
+b) Los resultados del modelo anterior sugieren alguna simplificación de la variable explicativa? Si es así realizala. 
+
+
+```{r eval=T, message=F,warning=FALSE}
+library(dplyr)
+# Como la variable fumador no es significativa, se puede simplificar en dos variables.
+# Primero vamos a considerar los siguientes grupos {No fumador} y {fumador, ex-fumador}
+diabetes2$TABAC2<-recode(diabetes$TABAC, 'No fumador'="No fumador", .default="Otro")
+mod2<-lm(EDATDIAG~TABAC2, data=diabetes2, na.action=na.exclude)
+summary(mod2)
+AIC(mod1,mod2)
+# Observamos que aunque ahora no hay ninguna categoria no significativa, el modelo es menos explicativo (únicamente el 3.255%) y el AIC es mayor. Vamos a ver que sucede si agrupamos con la otra opción {ex-fumador}, {fumador, No fumador} (Juntamos el más significativo con el menos.)
+
+diabetes2$TABAC22<-recode(diabetes$TABAC, 'ex-fumador'="ex-fumador", .default="Otro")
+mod3<-lm(EDATDIAG~TABAC22, data=diabetes2, na.action=na.exclude)
+summary(mod3)
+# Vemos que el R^2 ha disminuido con respuesto al modelo sin simplificar, pero el R^2 ajustado ha mejorado (dado que este último considera el número de variables al hacer la regresión: en el apartado a 2 en este caso 1)
+AIC(mod1,mod2,mod3)
+# Vemos que el tercer modelo no solo mejora el R^2 ajustado si no que también el AIC, por lo que nos quedamos con este modelo simplificado.
+```
+
+c) Valora qué variables de la base de datos deberían ser consideradas como potenciales confusores y evalúa la posible confusión causada por cada una de ellas. ¿Cuál es tu modelo final?
+
+```{r eval=T, message=F,warning=FALSE}
+library(GGally)
+```
+
+```{r,eval=T,message=F}
+# Confusores son aquellos que afectan a ambas variables X=TABAC22 e Y=EDATDIAG
+ggpairs(diabetes2[,c('EDATDIAG','TABAC22', 'BMI','SBP','DBP','ECG','CHD')], 
+        lower = list(continuous = "smooth"),
+        diag = list(continuous = "barDiag"), axisLabels = "none")
+
+# Descartamos BMI como confusora dado que la correlación con la variable de interés no es alta. No hay evidencia clara para descartar más.
+```
+
+
+```{r,eval=T,message=F}
+library(corrplot)
+corrplot(cor(diabetes2[,c('EDATDIAG','BMI','SBP','DBP')]), method = "number", tl.col = "black")
+```
+
+```{r,eval=T,message=F}
+# vamos a ver que variables pueden confundir. Lo que vamos a hacer es ver
+# como afectan al coeficiente del Tabac22.ex-fumador
+mod3a<-update(mod3, ~.+SBP)
+summary(mod3a)
+100*abs(coef(mod3a)["TABAC22ex-fumador"]-coef(mod3)["TABAC22ex-fumador"])/abs(coef(mod3))["TABAC22ex-fumador"]
+
+# SBP no confunde: apenas un cambio del 3%
+
+mod3a<-update(mod3, ~.+DBP)
+summary(mod3a)
+100*abs(coef(mod3a)["TABAC22ex-fumador"]-coef(mod3)["TABAC22ex-fumador"])/abs(coef(mod3))["TABAC22ex-fumador"]
+
+# DBP no confunde: apenas un cambio del 4%
+
+
+mod3a<-update(mod3, ~.+ECG)
+summary(mod3a)
+100*abs(coef(mod3a)["TABAC22ex-fumador"]-coef(mod3)["TABAC22ex-fumador"])/abs(coef(mod3))["TABAC22ex-fumador"]
+
+#ECG no confunde: un cambio de poco más del 1%
+
+
+mod3a<-update(mod3, ~.+CHD)
+summary(mod3a)
+100*abs(coef(mod3a)["TABAC22ex-fumador"]-coef(mod3)["TABAC22ex-fumador"])/abs(coef(mod3))["TABAC22ex-fumador"]
+
+#CHD no confunde: apenas un cambio del 4.5%
+```
+
+d) Caso de ser lícito considerar la variable _EDAT_ como potencial confusor, analiza su efecto.
+
+```{r,eval=T,message=F}
+diabetes2$EDAT<-diabetes$EDAT
+
+ggpairs(diabetes2[,c('EDATDIAG','TABAC2', 'EDAT')],
+        lower = list(continuous = "smooth"), diag = list(continuous = "barDiag"), 
+        axisLabels = "none")
+# Podría ser lícito, por la gran correlación que tiene con EDATDIAG y el efecto con TABAC2
+
+mod3a<-update(mod3, ~.+EDAT)
+summary(mod3a)
+100*abs(coef(mod3a)["TABAC22ex-fumador"]-coef(mod3)["TABAC22ex-fumador"])/abs(coef(mod3))["TABAC22ex-fumador"]
+# Confunde un 92%
+```
+
+
+## Ejercicio 3
+
+Usando la base de datos **deportistas**, valora e interpreta la existencia de interacción entre _MCMagra_ y _Genero_ en la explicación de la variable _PrctGrasa_ 
+
+```{r,eval=T,message=F}
+mod1<-lm(PrctGrasa~ MCMagra+Genero, data=deportistas, na.action=na.exclude )
+summary(mod1)
+
+modI<-lm(PrctGrasa~ MCMagra*Genero, data=deportistas, na.action=na.exclude )
+summary(modI)
+
+# Este ejercicio lo hemos visto en teoría.
+# Si quisieramos tener el modelo solo con la interaccióny MCMagra (Es decir, sin Genero sola)
+modI_2<-lm(PrctGrasa~ MCMagra*Genero-Genero, data=deportistas, na.action=na.exclude )
+summary(modI_2)
+```
+
+
+## Ejercicio 4
+
+En el banco de datos **Boston** del paquete de R MASS, que contiene datos sobre los suburbios de Boston, queremos analizar el precio medio de la vivienda _medv_ respecto del estatus de la población _lstat_. Para ello:
+
+```{r,eval=T,message=F}
+library(MASS)
+```
+ a) Ajusta una recta de regresión a los datos y representa el ajuste ¿Qué comentarías?
+ 
+```{r,eval=T,message=F}
+mod1<-lm(medv~ lstat, data=Boston, na.action=na.exclude )
+summary(mod1)
+
+plot(Boston$lstat,Boston$medv, pch=19,type="p")
+abline(coef=coef(mod1),col="darkcyan",lwd=2)
+# Aunque los coeficientes salen significativos, gráficamente observamos que sería mejor una regresión no lineal.
+```
+ 
+ b) Ajusta un modelo parabólico directamente y mediante polinomios ortogonales, compara numérica y gráficamente  los dos modelos entre sí y con el modelo lineal (comandos \texttt{anova} y \texttt{AIC})
+ 
+```{r,eval=T,message=F}
+mod2a<-lm(medv~lstat+I(lstat^2),data=Boston, na.action=na.exclude)
+summary(mod2a)
+anova(mod2a,mod1) # El p-valor es pequeño, por lo que rechazamos la hipótesis nula y el coeficiente cuadrático es significativo. Recordad que anova solo es para modelos aninados (dado que ve la significatividad de los coeficientes que no tienen en común)
+
+mod2b<-lm(medv~poly(lstat,2),data=Boston, na.action=na.exclude)
+summary(mod2b)
+anova(mod2b,mod1)
+
+plot(Boston$lstat,Boston$medv, pch=19,type="p")
+abline(coef=coef(mod1),col="darkcyan",lwd=2)
+lines(sort(Boston$lstat),fitted(mod2a)[order(Boston$lstat)],col="red", lwd=2,lty=2)
+lines(sort(Boston$lstat),fitted(mod2b)[order(Boston$lstat)],col="blue", lwd=2,lty=3)
+
+AIC(mod1);AIC(mod2a);AIC(mod2b)
+```
+ 
+ 
+ c) ¿Mejoraría el modelo con un polinomio de orden superior? Inténtalo usando el comando poly y representa el ajuste del modelo polinómico elegido.
+ 
+```{r,eval=T,message=F}
+#Lo hacemos con el b, para comparar la introducción de polinomios ortogonales.
+mod3b<-lm(medv~poly(lstat,3),data=Boston, na.action=na.exclude)
+anova(mod2b,mod3b,test="F")# El p-valor es pequeño, por lo que rechazamos la hipótesis nula y el coeficiente de orden 3 es significativo.
+
+mod4b<-lm(medv~poly(lstat,4),data=Boston, na.action=na.exclude)
+anova(mod4b,mod3b,test="F")# El p-valor es pequeño, por lo que rechazamos la hipótesis nula y el coeficiente de orden 4 es significativo.
+
+
+mod5b<-lm(medv~poly(lstat,5),data=Boston, na.action=na.exclude)
+anova(mod4b,mod5b,test="F")# El p-valor es pequeño, por lo que rechazamos la hipótesis nula y el coeficiente de orden 5 es significativo.
+
+mod6b<-lm(medv~poly(lstat,6),data=Boston, na.action=na.exclude)
+anova(mod6b,mod5b,test="F")# El p-valor es grande, por lo que no rechazamos la hipótesis nula y el coeficiente de orden 6 ya no es significativo.
+
+# Podríamos haber hecho un bucle con un criterio de parada adecuado.
+```
+
+```{r,eval=T,message=F}
+# Nos quedamos con el modelo de orden 5
+plot(Boston$lstat,Boston$medv, pch=16,type="p")
+abline(coef=coef(mod1),col="darkcyan",lwd=2)
+lines(sort(Boston$lstat),fitted(mod5b)[order(Boston$lstat)],col="red", lwd=2)
+```
+ 
+## Ejercicio 5 
+
+Las organizaciones profesionales de contables, ingenieros, etc., realizan encuestas regularmente entre sus miembros para conseguir información relativa a los salarios, las pensiones y las condiciones de empleo. Uno de los resultados de estas encuestas es la llamada curva de salario, que relaciona el sueldo con los años de experiencia. La curva salarial muestra el salario ``típico'' de los profesionales con un determinado número de años de experiencia. Es de gran interés para los miembros de la profesión, pues les gusta saber dónde están situados entre sus pares. También es útil para los departamentos de personal de las empresas, para realizar ajustes de sueldos o para contratar a nuevos profesionales. Modeliza la curva salarial, con los datos de la base **salarios**.
+
+```{r,eval=T,message=F}
+mod1<-lm(salario~experiencia,data=salarios, na.action=na.exclude)
+summary(mod1)
+
+plot(salarios$experiencia,salarios$salario, pch=19,type="p")
+abline(coef=coef(mod1),col="darkcyan",lwd=2)
+
+mod2<-lm(salario~experiencia+I(experiencia^2),data=salarios, na.action=na.exclude)
+anova(mod2,mod1) 
+
+mod3<-lm(salario~experiencia+I(experiencia^2)+I(experiencia^3),data=salarios, na.action=na.exclude)
+anova(mod2,mod3) 
+
+#Nos quedamos con el ajuste parabólico (gráficamente se podía intuir).
+```
+
+
+## Ejercicio 6
+
+Usando la base **diabetes**, 
+
+a) Ajusta el mejor modelo posible para predecir la edad al diagnóstico _EDATDIAG_, usando el comando \texttt{regsubset} y basándote en el criterio de mínimo Akaike.
+
+```{r,eval=T,message=F}
+library(leaps)
+sel_lm <- regsubsets(EDATDIAG ~ .-EDAT-TEMPSVIU-MORT-NUMPACIE , data=diabetes, nvmax=10)
+resumen<-summary(sel_lm)
+
+resultado <- cbind(resumen$rsq,resumen$adjr2,resumen$cp,resumen$bic)
+colnames(resultado) <- c('Rsq','RsqAdj','Cp','BIC')
+
+# Dibujamos los valores obtenidos del Cp (que es el que se basa en el criterio
+# de Akaike)
+plot(1:8, resumen$cp, xlab = "# Variables", main = "Cp de Mallows",
+     type='b')
+abline(v = which.min(resumen$cp), col = 2)
+
+colnames(resumen$which)[resumen$which[5,]==T] # Para saber cuales son las variables
+
+bestAIC<-lm(EDATDIAG ~TABAC+SBP+DBP+ECG+CHD,data=diabetes,na.action=na.exclude )
+AIC(bestAIC)
+summary(bestAIC)
+
+
+# Lo siguiente es para ver que efectivamente la variable ECG es significativa.
+prueba<-update(bestAIC,~.-ECG)
+anova(prueba,bestAIC,test="F")
+```
+
+```{r,eval=T,message=F}
+# Notar que las variables TABAC y ECG son significativas y tienen
+# tres categorías cada una. Es conveniente, como hemos hecho anteriormente,
+# crear una base de datos con las variables adecuadas.
+# En un ejercicio anterior hemos creado la variable TABAC22 con dos categorías.
+bestAIC<-lm(EDATDIAG ~TABAC22+SBP+DBP+ECG+CHD,data=diabetes2,na.action=na.exclude )
+prueba<-update(bestAIC,~.-ECG)
+anova(prueba,bestAIC,test="F")
+summary(bestAIC)
+
+
+# Creamos también una variable dicotómica para la variable ECG
+diabetes2$ECG2<-recode(diabetes$ECG, 'Normal'="Normal", 'Frontera'="Other",'Anormal'="Other")
+prueba1<-update(bestAIC,~.-ECG+ECG2)
+summary(prueba1)
+AIC(bestAIC,prueba1)
+
+# La categoría Other no es significativa. Veamos que pasa si ponemos por un lado Frontera y por el otro el resto (de esta forma juntamos el de más p-valor con el de menos):
+diabetes2$ECG2<-recode(diabetes$ECG, 'Frontera'="Frontera", .default="Other")
+prueba2<-update(bestAIC,~.-ECG+ECG2)
+AIC(bestAIC,prueba2)
+#Hemos ganado
+
+bestAIC<-prueba2
+summary(bestAIC)
+```
+
+
+b) Describe el modelo que has seleccionado. 
+
+
+
+## Ejercicio 7
+
+En la base **deportistas**, pretendemos ajustar el mejor modelo predictivo del porcentaje de grasa, usando las variables disponibles. Elige entre los dos métodos \texttt{regsubsets} y \texttt{step} ¿Cuál has elegido y por qué?
+
+```{r,eval=T,message=F}
+library(leaps)
+sel_lm1 <- regsubsets(PrctGrasa ~ . , data=deportistas,nvmax=19)
+resumen<-summary(sel_lm1)
+resultado <- cbind(resumen$rsq,resumen$adjr2,resumen$cp,resumen$bic)
+colnames(resultado) <- c('Rsq','RsqAdj','Cp','BIC')
+
+
+# Indica el mejor modelo predictivo por lo que nos basamos en el criterio AIC
+plot(1:19, resumen$cp, xlab = "# Variables", main = "Cp de Mallows",
+     type='b')
+abline(v = which.min(resumen$cp), col = 2)
+which.min(resumen$cp)
+colnames(resumen$which)[resumen$which[11,]==T]
+
+reg_sub<-lm(PrctGrasa ~ SumPliegues+MCMagra+Peso+Deporte+Genero,data=deportistas)
+summary(reg_sub)
+
+### El método de regsubsets considerada muchas categorías por separado, demasiadas variables y separa factores!
+
+
+lm_completo<-lm(PrctGrasa ~ . , data=deportistas, na.action=na.exclude)
+sel_lm <- step(lm_completo , direction = 'both',trace=0)
+summary(sel_lm)
+# Al final obtenemos los mismos resultados
+```
+
+## Ejercicio 8
+
+Usando la base de datos **Puentes**, ajusta el mejor modelo predictivo del coste de construcción _CCost_. ¿Qué variable de las disponibles tiene mayor capacidad predictiva?
+
+```{r,eval=T,message=F}
+library(leaps)
+sel_lm <- regsubsets(CCost ~. -Case , data=puentes,nvmax=8)
+summary(sel_lm)
+
+resumen<-summary(sel_lm)
+
+resultado <- cbind(resumen$rsq,resumen$adjr2,resumen$cp,resumen$bic)
+colnames(resultado) <- c('Rsq','RsqAdj','Cp','BIC')
+
+par(mfrow = c(1,3))
+plot(1:5, resumen$adjr2, xlab = "# Variables", main = "Coef. Det. Ajustado",
+     type="b")
+abline(v = which.max(resumen$adjr2), col = 2)
+plot(1:5, resumen$cp, xlab = "# Variables", main = "Cp de Mallows",
+     type='b')
+abline(v = which.min(resumen$cp), col = 2)
+plot(1:5, resumen$bic, xlab = "# Variables", main = "BIC",
+     type = "b")
+abline(v = which.min(resumen$bic), col = 2)
+par(mfrow=c(1,1))
+
+# Coinciden: son necesarias 4 variables.
+
+
+colnames(resumen$which)[resumen$which[4,]==T] #Vemos las variables necesarias
+
+best<-lm(CCost ~DArea+Dwgs+Length+Spans  ,data=puentes,na.action=na.exclude )
+summary(best)
+
+# Este es un caso en el que puede ser interesante hacer 0 el intercepto, dado que si todas las variables explicativas son cero, tiene sentido que el coste sea nulo y no negativo. Además, cuando hacemos el modelo sin intercepto mejoramos nuestra posible predicción:
+
+best_Sin<-lm(CCost ~DArea+Dwgs+Length+Spans-1  ,data=puentes,na.action=na.exclude )
+summary(best_Sin)
+AIC(best,best_Sin);BIC(best,best_Sin);anova(best,best_Sin);
+```
+
+
+
+
+
+

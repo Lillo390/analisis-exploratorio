@@ -1,0 +1,7 @@
+"0","#ajuste knn vecinos"
+"0","require(FNN)  #libreria"
+"2","Loading required package: FNN
+"
+"0","xx <- seq(min(lstat),max(lstat),0.25) # puntos (ordenados) "
+"2","Error in seq(min(lstat), max(lstat), 0.25) : object 'lstat' not found
+"

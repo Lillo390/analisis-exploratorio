@@ -1,0 +1,4 @@
+"0","ggplot(cars, mapping=aes(x=sqrt(log(MPG.city)), y=log(Price)))+geom_point()+"
+"0","geom_smooth(method = ""lm"", se=TRUE, level=0.9, formula=y~x)+"
+"0","ggtitle(""Diagrama de dispersión, recta=log(Price)~sqrt(log(MPG.city))"","
+"0","subtitle=""Confianza al 90%"")"

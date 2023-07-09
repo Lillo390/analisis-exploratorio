@@ -1,0 +1,537 @@
+---
+title: "Solución Ejercicios Tema 1. Regresión lineal simple"
+subtitle: "Máster en Ciencia de Datos. Módulo: Análisis exploratorio de datos"
+author: "Ana Navarro Quiles"
+date: "Curso 2022/2023"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Ejercicio 1
+
+Utilizando el banco de datos **deportistas**, considerad la variable respuesta *Peso* relacionandola con el predictor *PrctGrasa*.
+
+```{r,echo=T}
+load('datosTema1.Rdata')
+```
+
+a)  ¿Cuánto vale la pendiente de la recta? ¿Podemos afirmar que es positiva?
+
+```{r,eval=T}
+reg <- lm(Peso ~ PrctGrasa, data=deportistas) 
+coef(reg)
+summary(reg)
+```
+
+b)  Compara la varianza de la variable respuesta con la varianza de los residuos: ¿Qué porcentaje de la variabilidad inicial está explicado por la recta de mínimos cuadrados? ¿Qué porcentaje de la variabilidad inicial falta todavía por explicar?
+
+```{r,eval=T}
+y<-deportistas$Peso
+var(y)#varianza de la variable respuesta, es lo mismo que var(y)
+
+residuos <- residuals(reg)
+var(residuos) #varianza de los residuos
+# Es lo mismo que (summary(reg)$sigma)^2
+
+
+R2<-1-var(residuos)/var(y)      # bondad del ajuste. Es lo mismo que summary(reg)$r.squared
+R2*100 # Está explicado. 
+(1-R2)*100 # Falta por explicar
+```
+
+c)  Obtén los intervalos de confianza al 95% sobre los parámetros de la recta.
+
+```{r,eval=T}
+confint(reg)
+```
+
+d)  Dibuja el diagrama de dispersión, la recta de regresión y las bandas de confianza para la estimación al 95%.
+
+```{r,eval=T}
+#Obtención de bandas de estimación:
+minx<-range(deportistas$PrctGrasa)[1]; maxx<-range(deportistas$PrctGrasa)[2]
+nuevos <- data.frame(list(PrctGrasa = seq(minx,maxx,length=100)))
+bandas_est<-predict(reg, newdata = nuevos, interval = "confidence")
+
+#Representación gráfica:
+plot(deportistas$PrctGrasa,deportistas$Peso, col='BLUE')
+abline(coef=coef(reg), col='RED')
+lines(nuevos$PrctGrasa,bandas_est[,2],col='BLACK')
+lines(nuevos$PrctGrasa,bandas_est[,3],col='BLACK')
+```
+
+e)  Si te parece adecuado estima el peso correspondiente a nuevos individuos con los siguientes porcentajes de grasa: $25,50,75 \%$. Calcula sus respectivos intervalos de confianza al 95%.
+
+## Ejercicio 2
+
+Repite el ejercicio anterior considerando $IMC$ en lugar de peso y compara los resultados con los del ejercicio anterior.
+
+```{r,eval=T}
+reg <- lm(IMC ~ PrctGrasa, data=deportistas) 
+coef(reg)
+summary(reg)
+```
+
+```{r,eval=T}
+y<-deportistas$IMC
+var(y)
+
+residuos <- residuals(reg)
+var(residuos)
+
+R2<-1-var(residuos)/var(y)     # bondad del ajuste
+R2*100 # Está explicado
+(1-R2)*100 # Falta por explicar
+```
+
+```{r,eval=T}
+confint(reg)
+```
+
+```{r,eval=T}
+#Obtención de bandas de estimación:
+minx<-range(deportistas$PrctGrasa)[1]; maxx<-range(deportistas$PrctGrasa)[2]
+nuevos <- data.frame(list(PrctGrasa = seq(minx,maxx,length=100)))
+bandas_est<-predict(reg, newdata = nuevos, interval = "confidence")
+
+#Representación gráfica:
+plot(deportistas$PrctGrasa,deportistas$IMC, col='BLUE')
+abline(coef=coef(reg), col='RED')
+lines(nuevos$PrctGrasa,bandas_est[,2],col='BLACK')
+lines(nuevos$PrctGrasa,bandas_est[,3],col='BLACK')
+```
+
+```{r,eval=T}
+# Aunque la regresión no es muy buena, vamos a obtener las predicciones que se indican
+valores <- data.frame(list(PrctGrasa = c(25,50,75)))
+bandas_est<-predict(reg, newdata = valores, interval = "confidence")
+bandas_est
+```
+
+## Ejercicio 3
+
+Utilizando el banco de datos **deportistas.csv**, considerad la variable respuesta *PrctGrasa* relacionándola con el predictor *MCMagra*.
+
+a)  Obtén la recta mínimos cuadrados utilizando todos los datos, sin tener en cuenta el *sexo*
+
+```{r,eval=T}
+reg <- lm(PrctGrasa ~ MCMagra, data=deportistas) 
+summary(reg)
+```
+
+b)  Evalua el efecto del *Genero* sobre *PrctGrasa*
+
+```{r,eval=T}
+hombres <- subset(deportistas, Genero=='male') 
+mujeres <- subset(deportistas, Genero=='female') 
+cor(subset(hombres, select=c(PrctGrasa,MCMagra)))
+cor(subset(mujeres, select=c(PrctGrasa,MCMagra)))
+```
+
+```{r,eval=T}
+regsexo<-lm(PrctGrasa ~ Genero, data=deportistas)
+summary(regsexo)
+```
+
+c)  Obtén ahora una recta para los *hombres* y otra para las *mujeres*
+
+```{r,eval=T}
+regh <- lm(PrctGrasa ~ MCMagra, data=hombres) 
+summary(regh)
+
+regm <- lm(PrctGrasa ~ MCMagra, data=mujeres) 
+summary(regm)
+
+# En ambos casos podriamos haber calculado la recta forzando el intercepto a 0.
+```
+
+d)  Dibuja en la misma gráfica las tres rectas y comenta los resultados
+
+```{r,eval=T}
+par(mfcol=c(1,3))
+plot(hombres$MCMagra,hombres$PrctGrasa, col='BLUE')
+abline(coef=coef(regh), col='BLUE')
+plot(mujeres$MCMagra,mujeres$PrctGrasa, col='RED')
+abline(coef=coef(regm), col='RED')
+plot(deportistas$MCMagra,deportistas$PrctGrasa, col='BLACK')
+abline(coef=coef(reg), col='BLACK')
+```
+
+## Ejercicio 4
+
+En la base **deportistas**,
+
+a)  Evalúa mediante regresión lineal si el *PrctGrasa* explica los resultados análiticos: *Hematocrito*, *Ferritina* y *Hemoglobina*.
+
+```{r,eval=T}
+reg1 <- lm(Hematocrito ~ PrctGrasa, data=deportistas) 
+summary(reg1)
+reg2 <- lm(Ferritina ~ PrctGrasa, data=deportistas) 
+summary(reg2)
+reg3 <- lm(Hemoglobina ~ PrctGrasa, data=deportistas) 
+summary(reg3)
+```
+
+b)  Evalúa mediante regresión lineal si *peso* y *altura* explican el *PrctGrasa*.
+
+```{r,eval=T}
+reg4 <- lm(PrctGrasa ~ Peso, data=deportistas) 
+summary(reg4)
+reg5 <- lm(PrctGrasa ~ Altura, data=deportistas) 
+summary(reg5)
+```
+
+c)  Evalúa la relación entre *IMC* y las variables *SumPliegues* y *PrctGrasa*
+
+```{r,eval=T}
+cor(subset(deportistas,select=c(IMC,SumPliegues,PrctGrasa)))
+```
+
+## Ejercicio 5
+
+Utilizando el modelo $Y=25 + 2X + \epsilon$, siendo $\epsilon$ Normal con media $0$ varianza $\sigma^2=4$, simula $N = 10000$ muestras de tamaño $n = 50$. Para ello, utiliza valores de $X$ simulados de una Uniforme definida en el intervalo $(0,5)$. A continuación, para cada una de las muestras simuladas, obtén el intervalo de confianza al 95% sobre la pendiente de la recta. ¿Qué porcentaje de intervalos no contienen al verdadero valor de la pendiente?
+
+Vuelve a calcular ese porcentaje, pero ahora simulando $\epsilon$ de forma que $\epsilon/8$ sea t-Student con 4 grados de libertad. ¿Cómo afecta la falta de normalidad a la fiabilidad de ese intervalo?
+
+\textcolor{red}{El objetivo del problema es ver que el modelo de regresión es bastante robusto ante no normalidad de residuos. Podéis probar con otras distribuciones, como la exponencial}.
+
+```{r,eval=T}
+ICbeta1<-function(){
+n<-50
+x<-runif(n,0,5)
+epsilon<-rnorm(n,0,2)
+y<-25+2*x+epsilon
+mod<-lm(y~x)
+return(confint(mod)[2,])
+}
+```
+
+```{r,eval=T}
+N<-10000
+ICsim<-t(replicate(N, ICbeta1()))
+(1-sum(ICsim[,1]<=2 & ICsim[,2]>=2)/N)*100 # 1 menos la suma de los que si que contienen al 2.
+```
+
+```{r,eval=T}
+ICbeta1_2<-function(){
+n<-50
+x<-runif(n,0,5)
+epsilon<-8*rt(n,4) 
+y<-25+2*x+epsilon
+mod<-lm(y~x)
+return(confint(mod)[2,])
+}
+```
+
+```{r,eval=T}
+N<-10000
+ICsim<-t(replicate(N, ICbeta1_2()))
+(1-sum(ICsim[,1]<=2 & ICsim[,2]>=2)/N)*100 # 1 menos la suma de los que si que contienen al 2.
+```
+
+## Ejercicio 6
+
+Utilizando el banco de datos **Auto**, en el paquete de R **ISLR**, se desea explicar el consumo de carburante, variable _mpg_, a partir de la potencia del motor, variable _horsepower_.
+
+a) Dibuja el diagrama de dispersión y la recta de mínimos cuadrados.
+
+```{r,eval=T}
+library(ISLR)
+```
+
+
+```{r,eval=T}
+mod1<-lm(mpg~horsepower,data=Auto)
+
+plot(Auto$horsepower, Auto$mpg, type="p", pch=19,cex=0.75)
+abline(coef=coef(mod1),col="darkcyan",lwd=2)
+```
+
+
+b) ¿Hay relación entre esas dos variables? ¿Cómo de fuerte es esa relación? ¿Podemos afirmar si es positiva o negativa?
+
+```{r,eval=T}
+summary(mod1)
+cor(Auto$horsepower,Auto$mpg)
+```
+
+c) ¿Qué consumo se espera si potencia del motor es 75? Proporciona el intervalo de confianza y el de predicción para esa potencia de motor.
+
+```{r,eval=T}
+predict.lm(mod1,newdata=data.frame(horsepower=75), se=T)
+predict(mod1, newdata = data.frame(horsepower=75), interval = "prediction")  #banda de error pred de un nuevo dato
+predict(mod1, newdata = data.frame(horsepower=75), interval = "confidence")  #banda de error de estimación
+```
+
+
+d) Analiza gráficamente los residuos y comenta los resultados.
+
+```{r,eval=T}
+residuos <- residuals(mod1)
+predichos <- fitted.values(mod1)
+plot(predichos,residuos, col='BLUE',main = 'Gráfica de residuos')
+abline(h=0,lty=2)
+```
+
+\textcolor{red}{Vemos un ejemplo de no linealidad (al principio tampoco homocedasticidad)}
+
+## Ejercicio 7
+
+El banco de datos **cerebros** es un banco de datos famoso. En él se recogen los pesos del cuerpo y del cerebro de diversos animales. Vamos a explicar el peso del cerebro (en g) _cerebro_ a partir del peso del cuerpo (en Kg) _cuerpo_. 
+
+a) Ajusta el modelo y realiza el diagnóstico del modelo.
+
+```{r,eval=T}
+mod1<-lm(cerebro~cuerpo, data=cerebros, na.action=na.exclude)
+plot(cerebros$cuerpo, cerebros$cerebro, type="p", pch=19,cex=0.75)
+abline(coef=coef(mod1),col="darkcyan",lwd=2)
+text(cerebros$cuerpo, cerebros$cerebro, labels=cerebros$Nombre,cex=0.5)
+```
+```{r,eval=T}
+# Dibujamos residuos vs predichos para realizar el diagnóstico del modelo
+residuos <- residuals(mod1)
+predichos <- fitted.values(mod1)
+plot(predichos,residuos, pch=19, main = 'Gráfica de residuos')
+text(predichos,residuos, labels=rownames(cerebros),cex=0.5,adj=c(0,2))
+
+# Normalidad
+abline(h=0,lty=2)
+qqnorm(residuos, pch=19, cex=0.5,main = 'qq plot')
+qqline(residuos,col="red")
+
+# Observamos la falta de linealidad y homocedasticidad
+```
+
+b) Retira los datos que no pertenecen a la misma población que el resto y re-analiza.
+
+```{r,eval=T}
+# Indica los que no pertenecen a la misma población. En este caso el 26, 27 y 28 
+# son dinosaurios. Si nos preguntaran retirar aquellos datos influyentes habríamos 
+# quitado el 6, 14 y 28
+mamiferos<-cerebros[-c(26,27,28),]
+mod2<-lm(cerebro~cuerpo, data=mamiferos, na.action=na.exclude)
+plot(mamiferos$cuerpo, mamiferos$cerebro, type="p", pch=19,cex=0.75)
+abline(coef=coef(mod2),col="darkcyan",lwd=2)
+text(mamiferos$cuerpo, mamiferos$cerebro, labels=mamiferos$Nombre,cex=0.5)
+```
+
+```{r,eval=T}
+# Dibujamos residuos vs predichos para realizar el diagnóstico del modelo
+residuos <- residuals(mod2)
+predichos <- fitted.values(mod2)
+plot(predichos,residuos, pch=19, main = 'Gráfica de residuos')
+text(predichos,residuos, labels=rownames(mamiferos),cex=0.5,adj=c(0,2))
+
+# Normalidad
+abline(h=0,lty=2)
+qqnorm(residuos, pch=19, cex=0.5,main = 'qq plot')
+qqline(residuos,col="red")
+```
+```{r,eval=T}
+# Aunque no lo pide, vamos a mejorar el modelo de mamíferos. Vemos que el 6
+# es influtente
+mamiferos[c(6),]
+mamiferos2<-mamiferos[-c(6),]
+mod3<-lm(cerebro~cuerpo, data=mamiferos2, na.action=na.exclude)
+plot(mamiferos2$cuerpo, mamiferos2$cerebro, type="p", pch=19,cex=0.75)
+abline(coef=coef(mod3),col="darkcyan",lwd=2)
+text(mamiferos2$cuerpo, mamiferos2$cerebro, labels=mamiferos2$Nombre,cex=0.5)
+```
+```{r,eval=T}
+# Dibujamos residuos vs predichos para realizar el diagnóstico del modelo
+residuos <- residuals(mod3)
+predichos <- fitted.values(mod3)
+plot(predichos,residuos, pch=19, main = 'Gráfica de residuos')
+text(predichos,residuos, labels=rownames(mamiferos2),cex=0.5,adj=c(0,2))
+
+# Normalidad
+abline(h=0,lty=2)
+qqnorm(residuos, pch=19, cex=0.5,main = 'qq plot')
+qqline(residuos,col="red")
+```
+```{r,eval=T}
+# Podríamos seguir quitando el 13 y/o 14 y viendo que sucede
+mamiferos[c(6,13,14),]
+mamiferos2<-mamiferos[-c(6,13,14),]
+mod3<-lm(cerebro~cuerpo, data=mamiferos2, na.action=na.exclude)
+plot(mamiferos2$cuerpo, mamiferos2$cerebro, type="p", pch=19,cex=0.75)
+abline(coef=coef(mod3),col="darkcyan",lwd=2)
+text(mamiferos2$cuerpo, mamiferos2$cerebro, labels=mamiferos2$Nombre,cex=0.5)
+```
+```{r,eval=T}
+# Dibujamos residuos vs predichos para realizar el diagnóstico del modelo
+residuos <- residuals(mod3)
+predichos <- fitted.values(mod3)
+plot(predichos,residuos, pch=19, main = 'Gráfica de residuos')
+text(predichos,residuos, labels=rownames(mamiferos2),cex=0.5,adj=c(0,2))
+
+# Normalidad
+abline(h=0,lty=2)
+qqnorm(residuos, pch=19, cex=0.5,main = 'qq plot')
+qqline(residuos,col="red")
+
+# Seguimos sin normalidad ni homocedasticidad. El tratamiento de estos
+# datos directamente es muy cumplicado por las diferencias de escala. 
+# Una solución es la que se indica en el Ejercicio 8.
+```
+
+## Ejercicio 8
+
+Utilizando los datos de mamíferos, del banco **cerebros**, y las variables en escala logarítmica, dibuja el diagrama de puntos con la recta de mínimos cuadrados. A continuación, analiza gráficamente los residuos ¿crees que el modelo lineal sería adecuado?
+```{r,eval=T}
+par(mfrow=c(2,2))
+hist(mamiferos$cerebro, main="cerebro")
+hist(mamiferos$cuerpo, main="cuerpo")
+hist(log(mamiferos$cerebro),main="ln(cerebro)")
+hist(log(mamiferos$cuerpo),main="ln(cuerpo)")
+```
+```{r,eval=T}
+mamiferos<-cerebros[-c(26,27,28),]
+y<-log(mamiferos$cerebro)
+x<-log(mamiferos$cuerpo)
+
+
+mod1<-lm(y~x, na.action=na.exclude)
+
+plot(x,y, type="p", pch=19,cex=0.75)
+abline(coef=coef(mod1),col="darkcyan",lwd=2)
+text(mamiferos$cuerpo, mamiferos$cerebro, labels=mamiferos$Nombre,cex=0.5)
+```
+```{r,eval=T}
+# Dibujamos residuos vs predichos para realizar el diagnóstico del modelo
+residuos <- residuals(mod1)
+predichos <- fitted.values(mod1)
+plot(predichos,residuos, pch=19, main = 'Gráfica de residuos')
+text(predichos,residuos, labels=rownames(mamiferos),cex=0.5,adj=c(0,2))
+
+# Normalidad
+abline(h=0,lty=2)
+qqnorm(residuos, pch=19, cex=0.5,main = 'qq plot')
+qqline(residuos,col="red")
+```
+
+Suponiendo adecuado el modelo lineal, contesta a las siguientes preguntas:
+
+a) ¿Cuánto vale la pendiente de la recta? ¿Podemos afirmar que es positiva?
+
+```{r,eval=T}
+coef(mod1)
+```
+
+b) Compara la varianza de la variable respuesta con la varianza de los residuos: ¿Qué porcentaje de la variabilidad inicial está explicado por la recta de mínimos cuadrados? ¿Qué porcentaje de la variabilidad inicial falta todavía por explicar?
+
+```{r,eval=T}
+var(y)
+
+residuos <- residuals(mod1)
+var(residuos)
+
+
+R2<-1-var(residuos)/var(y)      # bondad del ajuste
+R2*100 # Está explicado
+(1-R2)*100 # Falta por explicar
+
+# Lo anterior es lo mismo que:
+n<-length(mamiferos$cerebro)
+(summary(mod1)$sigma)^2*(n-2)/(n-1)
+summary(mod1)$r.squared*100
+```
+
+c) Obtén los intervalos de confianza al 90% sobre los parámetros de la recta.
+
+```{r,eval=T}
+confint(mod1,level=.9)
+```
+
+d) Estima el valor de la recta de regresión en el punto _lcuerpo = 3_ y calcula su intervalo de confianza al 95%. Dibuja el diagrama de dispersión, la recta de regresión y las bandas de confianza al 95% sobre la estimación de la recta.
+
+```{r,eval=T}
+#Predicción
+nuevos <- data.frame(list(x = 3))
+bandas_est<-predict(mod1, newdata =nuevos, interval = "confidence")
+
+#Obtención de bandas de estimación:
+minx<-range(x)[1]; maxx<-range(x)[2]
+nuevos <- data.frame(list(x = seq(minx,maxx,length=100)))
+bandas_est<-predict(mod1, newdata = nuevos, interval = "confidence")
+
+#Representación gráfica:
+plot(x,y, col='BLUE')
+abline(coef=coef(mod1), col='RED')
+lines(nuevos$x,bandas_est[,2],col='BLACK')
+lines(nuevos$x,bandas_est[,3],col='BLACK')
+text(mamiferos$cuerpo, mamiferos$cerebro, labels=mamiferos$Nombre,cex=0.5)
+```
+
+e) Obtén la predicción puntual y por intervalos (al 95%) de un nuevo mamífero con _lcuerpo = 6_. Añade a la gráfica anterior las bandas de predicción.
+
+```{r,eval=T}
+#Predicción
+nuevos <- data.frame(list(x = 6))
+predict(mod1, newdata =nuevos, interval = "prediction")
+
+#Obtención de bandas de estimación:
+minx<-range(x)[1]; maxx<-range(x)[2]
+nuevos <- data.frame(list(x = seq(minx,maxx,length=100)))
+bandas_pred<-predict(mod1, newdata = nuevos, interval = "prediction")
+
+#Representación gráfica:
+plot(x,y, col='BLUE')
+abline(coef=coef(mod1), col='RED')
+lines(nuevos$x,bandas_est[,2],col='BLACK')
+lines(nuevos$x,bandas_est[,3],col='BLACK')
+lines(nuevos$x,bandas_pred[,2],col='GREEN')
+lines(nuevos$x,bandas_pred[,3],col='GREEN')
+text(mamiferos$cuerpo, mamiferos$cerebro, labels=mamiferos$Nombre,cex=0.5)
+```
+
+
+## Ejercicio 9
+
+El banco de datos **Advertising.csv** relaciona las ventas de ciertos productos con la inversión en publicidad, considerando diversos medios: televisión, radio y periódicos. Aquí vamos a estudiar la variable respuesta _sales_ relacionándola con el predictor _TV_.
+
+a) Obtén un ajuste mediante el método _KNN_, decidiendo el valor de $k$ que consideres adecuado.
+
+b) Obtén un ajuste mediante el método _loess_, decidiendo el valor de _span_ que consideres adecuado.
+
+c) Dibuja, en la misma gráfica, los dos ajustes anteriores junto con la recta de mínimos cuadrados
+
+
+```{r,eval=T}
+Advertising <- read.csv('Advertising.csv')
+```
+
+```{r,eval=T}
+plot(Advertising$TV,Advertising$sales)
+
+xx <- seq(0,300,10)
+TVred <- data.frame(list(TV = seq(0,300,10)))
+modknn<- FNN::knn.reg(Advertising$TV,test=TVred, y=Advertising$sales, k=15)
+
+lines(xx,modknn$pred,col="darkcyan")
+
+```
+
+```{r,eval=T}
+plot(Advertising$TV,Advertising$sales)
+modloess<- loess(sales~ TV,data=Advertising, span=0.3) 
+lines(sort(Advertising$TV),modloess$fitted[order(Advertising$TV)],col="coral")
+```
+
+```{r,eval=T}
+plot(Advertising$TV,Advertising$sales)
+
+xx <- seq(0,300,10)
+TVred <- data.frame(list(TV = xx))
+modknn<- FNN::knn.reg(Advertising$TV,test=TVred, y=Advertising$sales, k=15)
+lines(xx,modknn$pred,col="darkcyan")
+
+modloess<- loess(sales~ TV,data=Advertising, span=0.3) 
+lines(sort(Advertising$TV),modloess$fitted[order(Advertising$TV)],col="coral")
+```

@@ -1,0 +1,2 @@
+"0","d16<-Chicago%>%filter(date>=ymd(""1998-01-01"") & date<=ymd(""2000-01-01""))%>%arrange(pm10tmean2)%>%select(""pm10tmean2"", ""no2tmean2"", ""date"")"
+"0","d16"

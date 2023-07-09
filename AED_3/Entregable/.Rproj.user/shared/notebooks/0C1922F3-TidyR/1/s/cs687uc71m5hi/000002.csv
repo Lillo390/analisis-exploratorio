@@ -1,0 +1,48 @@
+"0","```r
+# Especificamos las librerías necesarias en esta lista
+
+packages = c(\"tidyr\",\"knitr\", \"dplyr\")
+
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed and loaded
+package.check <- lapply(packages, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+```"
+"1","Loading required package: dplyr
+Warning: package ‘dplyr’ was built under R version 4.1.3
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff,
+    setequal, union
+"
+"0","```r
+#verify they are loaded
+search()
+```"
+"1"," [1] \".GlobalEnv\"       
+ [2] \"package:dplyr\"    
+ [3] \"package:tidyr\"    
+ [4] \"package:knitr\"    
+ [5] \"tools:rstudio\"    
+ [6] \"package:stats\"    
+ [7] \"package:graphics\" 
+ [8] \"package:grDevices\"
+ [9] \"package:utils\"    
+[10] \"package:datasets\" 
+[11] \"package:methods\"  
+[12] \"Autoloads\"        
+[13] \"org:r-lib\"        
+[14] \"package:base\"     
+"

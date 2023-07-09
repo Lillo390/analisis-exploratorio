@@ -1,0 +1,2 @@
+"0","EmpicenPor_d<-select(Chicago,starts_with(""d""))"
+"0","head(EmpicenPor_d)"

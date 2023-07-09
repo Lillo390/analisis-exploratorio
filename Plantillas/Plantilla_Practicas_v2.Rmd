@@ -1,0 +1,288 @@
+---
+# Cabecera YAML: especifica las opciones de configuración del documento (https://m-clark.github.io/Introduction-to-Rmarkdown/customization.html)
+#Opciones de cabecera en: https://cran.r-project.org/web/packages/ymlthis/vignettes/yaml-fieldguide.html
+title: "Plantilla para la realización de informes / memorias"
+subtitle: Análisis Exploratorio de Datos. Máster en Ciencia de Datos - UV
+author: "Marcelino Martínez Sober"
+date:  '`r format(Sys.Date(),"%d-%m-%Y")`'  #Pondría la fecha del día actual
+params:
+  lang: ES
+lang: "`r switch(params$lang, ES = 'es-ES', EN = 'en-US')`"
+output:
+  # html_document:
+  #   echo: yes
+  #   number_sections: yes
+  #   theme: lumen 
+  #   toc: yes
+  # html_notebook:
+  #   echo: yes
+  #   number_sections: yes
+  #   toc: yes
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+language:
+  label:
+    fig: 'Figura '
+    tab: 'Tabla '
+    eq: 'Ecuación '
+    thm: 'Teorema '
+    lem: 'Lema '
+    def: 'Definición '
+    cor: 'Corolario '
+    prp: 'Proposición '
+    exm: 'Ejemplo '
+    exr: 'Ejercicio '
+    proof: 'Demostración. '
+    remark: 'Nota: '
+    solution: 'Solución. '
+urlcolor: blue
+lof: TRUE #list of figures
+lot: TRUE #list of tables
+---
+
+# Documentación _online_
+
+Puedes encontrar un tutorial muy útil sobre __Rmarkdown__ en [https://rmarkdown.rstudio.com/lesson-1.html](https://rmarkdown.rstudio.com/lesson-1.html)
+
+# Previo. Crea un proyecto.
+
+Para cada tarea **crea un nuevo proyecto** con, al menos, una carpeta **./data**, que contenga los datos, (puedes usar carpetas adicionales para organizar la información: programas, **./program**, figuras, **./figure**, etc). El proyecto contendrá al menos un fichero con el código a ejecutar __\*.Rmd__.
+
+**ATENCIÓN**: No uséis rutas con espacios o caracteres extraños.  
+
++ `c:\TtoDatos` --> SI
+<!-- + `c\Ruta de TD Rosa Peña 👍😁👍` -> NOOOOO!!! -->
++ `c\Ruta de TD Rosa Peña Emoticonos` -> NOOOOO!!!
+
+**Esta carpeta es un ejemplo de proyecto**: 
+
++ **0-Plantilla_RmarkdownPracticas**, es la carpeta de proyecto.  
++ **0-Plantilla_RmarkdownPracticas.Rproj** es el fichero de proyecto que contiene al menos un programa.  
++ **Plantilla_Practicas.Rmd** es el programa.  
++ **data** y **figure** son carpetas locales al proyecto para organizar la información. 
+
+Si utilizamos rutas locales, al compartir proyectos basta con comprimir la carpeta del proyecto ya que contendrá todos los ficheros adicionales necesarios.
+
+Al realizar la compilación podemos optar por varios formatos de salida. Los más habituales son **html** y **pdf**, que especificaremos en las opciones *output* de la cabecera del fichero. Es posible obtener varias salidas simultáneamente.  El fichero de salida tiene el mismo nombre que el fichero del programa.
+
+## Salida **html**
+
+Tenemos 2 opciones **html** y **nb.html** (notebook). Son muy similares si bien **nb.html** tiene características adicionales ocultar /visualizar el código (si originalmente estaba visible *echo=TRUE*)
+
+output:  
+#   pdf_document: 
+#     toc: yes  
+#     toc_depth: 3  
+#     number_sections: yes  
+#   html_notebook:  
+#     echo: yes  
+#     number_sections: yes  
+#     toc: yes  
+   html_document:  
+     echo: yes  
+     number_sections: yes  
+     theme: lumen  
+     toc: yes
+
+## Salida **pdf**
+
+Para generar documentos **pdf** descomentamos las líneas correspondientes.
+
+output:  
+   pdf_document: 
+     toc: yes  
+     toc_depth: 3  
+     number_sections: yes  
+#   html_notebook:  
+#     echo: yes  
+#     number_sections: yes  
+#     toc: yes  
+#   html_document:  
+#     echo: yes  
+#     number_sections: yes  
+#     theme: lumen  
+#     toc: yes
+
+En el lenguaje *Markdown* (*Rmarkdown* en nuestro caso), es posible incluir elementos de otros lenguajes como *LaTeX*, ampliamente utilizado para la escritura de documentos científicos. Por ejemplo usando LaTeX se pueden escribir ecuaciones matemáticas como:
+
+$$a x^{2}+b x+c=0$$
+$$x=\frac{-b \pm \sqrt{b^{2}-4 \cdot a \cdot c}}{2 \cdot a}$$
+
+Para que la compilación a pdf sea posible es necesario tener instalado en nuestro ordenador un compilador de LaTeX. Una alternativa sencilla que nos permite resolver este problema, es instalar un compilador para usarlo solo dentro de R, para ello debes seguir los siguientes pasos:
+
+### Instalación [Tinytex](https://yihui.org/tinytex/)
+
+
+1. Instala la última versión de R (La puedes descargar desde Cran R)
+2. Instala la última versión de RStudio.
+3. Desde Rstudio instala la librería *tinytex* para ellos ve escribiendo en la línea de comandos las siguientes instrucciones:
+  + `install.packages("tinytex", dependencies = TRUE)` 
+  +  `library(tinytex)` 
+  +  `tinytex::install_tinytex()` 
+
+El proceso puede tardar unos minutos ya que ocupa unos 200MB.
+
+Una vez finalizado el proceso prueba a compilar a *pdf*.
+
+     
+# Opciones generales chunks
+
++ `include = FALSE` evita que el código y los resultados aparezcan en el archivo terminado. R Markdown aún ejecuta el código en el fragmento y los resultados pueden ser utilizados por otros fragmentos.
++ `echo = FALSE` evita que el código, pero no los resultados, aparezcan en el archivo terminado. Esta es una manera útil de incrustar figuras.
++ `message = FALSE` evita que los mensajes generados por el código aparezcan en el archivo finalizado.
++ `warning = FALSE` evita que las advertencias generadas por el código aparezcan en el informe final.
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+
+# CONFIGURACIÓN GENERAL
+library(knitr)
+options(width = 100)
+# Opciones generales chunks
+
+#include = FALSE evita que el código y los resultados aparezcan en el archivo terminado. R Markdown aún ejecuta el código en el fragmento y los resultados pueden ser utilizados por otros fragmentos.
+#echo = FALSE evita que el código, pero no los resultados, aparezcan en el archivo terminado. Esta es una manera útil de incrustar figuras.
+#message = FALSE evita que los mensajes generados por el código aparezcan en el archivo finalizado.
+#warning = FALSE evita que las advertencias generadas por el código aparezcan en el final.
+
+#fig.cap = "..." agrega un título a los resultados gráficos.
+
+opts_chunk$set(echo=F, message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = './figure/')
+
+#options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+  
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+#knit_hooks$set(plot = knitr:::hook_plot_html)
+```
+
+# Librerías cargadas
+
+Incluir la lista de librerías necesarias para la ejecución de código en 
+`packages = c("imager","tidyverse","knitr")`
+
+```{r, echo=FALSE, message=FALSE}
+# Especificamos las librerías necesarias en esta lista
+
+packages = c("imager","kableExtra","tidyverse","knitr")
+
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed and loaded
+package.check <- lapply(packages, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE,repos='http://cran.rediris.es')
+    library(x, character.only = TRUE)
+  }
+})
+
+#verify they are loaded
+search()
+
+```
+
+
+
+# ¿Cómo inicio el informe /documento / práctica ? 
+
+Haz una breve introducción al problema que se desea resolver.
+
+En este documento se describe   ... bla bla bla
+
+A continuación ve insertando bloques de código que vayan ilustrando cada una de las etapas así como los resultados obtenidos.
+
+Utiliza diferentes niveles en los títulos para generar automáticamente un índice.
+
++ `# Título`
++ `## Subtítulo`
++ `### Subsubtítulo`
+
+
+```{r}
+
+
+
+```
+
+# Rutas locales
+
+Usa siempre rutas referidas a la carpeta, en la que se encuentra el fichero fuente, y siempre rutas **relativas** a dicha ubicación. 
+
+Ejemplos
+
+**ruta1<-'data/tabla1.txt'**  : el fichero está en la carpeta datos que cuelga del directorio donde está el código. 
+
+**ruta2<-'./data/tabla1.txt'** : el fichero está en la carpeta datos que cuelga de un nivel superior
+
+**ruta3<-'../data/tabla1.txt'** : el fichero está en la carpeta datos que cuelga de dos niveles superiores
+
+**ruta4<-'./../data/tabla1.txt'** : el fichero está en la carpeta datos que cuelga de tres niveles superiores
+
+ruta5<-'C:/MisDatos/Ej.txt'  **NO USAR NUNCA UNA RUTA ABSOLUTA COMO ESTA**
+
+```{r}
+
+
+
+```
+
+# Cómo incluir figuras.
+
+Hay que tener en cuenta que el aspecto final del docuemento va a depender de si se genera un archivo *html*, o *pdf*, incluso algunas opciones de formato van a ser dependientes del tipo de documento de salida. El documento [Rmarkdown cheat sheet](https://rmarkdown.rstudio.com/lesson-15.html)
+
+## Subapartado. Opción 1.Figuras en fichero.
+
+La figura está almacenada en un fichero, en una carpeta local al proyecto.
+
+Podemos controlar las opciones de la figura con parámetros del *chunk* 
+
+
+```{r fig.cap = "Texto en pie de la figura. Control de tamaño 1 \\label{logoETSE}", fig.height=4, fig.width=4, echo=TRUE, message=FALSE, warning=FALSE}
+library(imager)
+image <- load.image('figure/logoETSE.png')
+plot(image, axes = 0)
+```
+
+```{r fig.cap = "Texto en pie de la figura. Control de tamaño 2. \\label{logoGCD}", out.width='20%', echo=FALSE, message=FALSE, warning=FALSE}
+library(imager)
+#image <- load.image('figure/logoGCD.pdf')
+image<-imager::load.image('figure/logoETSE.png')
+plot(image, axes = 0)
+```
+Preferiblemente utiliza imágenes en formato **png** aunque también se aceptan otros formatos.
+
+En el texto podemos referenciar automáticamente las figuras usando `\ref{etiqueta}` con el mismo nombre de etiqueta asociado con `\label{etiqueta}`. Ten en encuenta que no puede haber dos etiquetas iguales.  
+
+En \ref{logoETSE} tenemos una figura en la que se controla anchura y altura y en \ref{logoGCD} se utiliza un porcentaje sobre el tamaño original de al figura.
+
+## Subapartado. Opción 2.Figuras generadas en ejecución.
+
+Dibujamos la gráfica en un *chunk* que nombraremos, por ejemplo. El siguiente se denomina  **presFig**
+
+```{r presFig, echo=FALSE,fig.cap="Referencia a figura a partir del nombre del chunk. \\label{fig::presFig}", out.width='50%', echo=TRUE, message=FALSE, warning=FALSE}
+plot(pressure)
+```
+Podemos referenciar a la figura usando `\ref{fig::presFig}`. 
+
+Por ejemplo diríamos que en la figura \ref{fig::presFig} se observa que al aumentar la variable `temperature` aumenta la variable `pressure`.
+
+Ten en cuenta que la numeración de las figuras es automática.
+
+# Cómo incluir tablas de resultados.
+También podemos mostrar la información en forma de tabla 
+La librería `kableExtra` [https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html](https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html) te permite personalizar tus tablas con un sinfín de posibilidades. Tanto en formato _html_ como _pdf_ [https://haozhu233.github.io/kableExtra/awesome_table_in_pdf.pdf](https://haozhu233.github.io/kableExtra/awesome_table_in_pdf.pdf)
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+knitr::kable(pressure,caption="Valores de las variables mostrados en la figura \\ref{fig::presFig}. \\label{EventosFallo}")
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+knitr::kable(pressure,caption="Valores de las variables mostrados en la figura \\ref{fig::presFig}. \\label{EventosFallo}")%>%kable_styling()
+```
+

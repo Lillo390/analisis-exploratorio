@@ -1,0 +1,302 @@
+---
+title: "Ejercicios Tema 3"
+author: "Carlos Blom-Dahl Ramos"
+output: html_document
+date: '2022-11-06'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Ejercicio 1: ------------------------------------------------------------
+
+```{r, include=FALSE}
+t=seq(0,2*pi,by=0.001)
+y<-cos(2*pi*0.5*t^2)
+```
+
+(a) Representa la señal de entrada y di qué tipo de señal tenemos entre manos.
+
+Calcular la STFT de la siguiente señal considerando los siguientes casos:
+
+(b) Toma varias funciones ventana: Bartlett, Blackman, Flat-top, Hamming, Hanning,  Rectangle y diversas anchuras de la ventana (wl=128, 512, 1024). 
+ 
+(c) Considera el caso en el que existe solapamiento entre ventanas consecutivas de ovpl=10% ,25% y 50%.
+En este caso, limita el cálculo a ventanas de Hanning y Rectangle (Calcula para wl=128 y 1024). 
+
+En los apartados, (b) y (c) comenta los resultados obtenidos en términos de lo que es esperable dada la señal de entrada.
+
+Ayuda: Emplea el paquete seewave, donde se encuntra el comando "spectro".
+
+_Respuesta:_
+
+```{r ejer1, warning=FALSE}
+require(seewave)
+# (a) Represente la señal de entrada y diga qué tipo de señal tenemos entre manos.
+plot(t,y, type="l", main="Señal de tipo Chirp")
+
+# Calcular la STFT de la siguiente señal:
+# (b) Tomen varias funciones ventana: Bartlett, Blackman, Flat-top, Hamming,
+# Hanning, Rectangle y diversas anchuras de la ventana (wl=128, 512, 1024).
+op<-par(mfrow=c(1,3))
+wr<-128
+fr<-1000
+tipo<-"bartlett"
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=128, Bartlett")
+
+wr<-512
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=512, Bartlett")
+
+wr<-1024
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=1024, Bartlett")
+
+
+wr<-128
+tipo<-"blackman"
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=128, Blackman")
+
+wr<-512
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=512, Blackman")
+
+wr<-1024
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=1024, Blackman")
+
+
+wr<-128
+tipo<-"flattop"
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=128, Flat-top")
+
+wr<-512
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=512, Flat-top")
+
+wr<-1024
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=1024, Flat-top")
+
+wr<-128
+tipo<-"hamming"
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=128, Hamming")
+
+wr<-512
+tipo<-"hamming"
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=512, Hamming")
+
+wr<-1024
+tipo<-"hamming"
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=1024, Hamming")
+
+wr<-128
+tipo<-"hanning"
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=128, Hanning")
+
+wr<-512
+tipo<-"hanning"
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=512, Hanning")
+
+wr<-1024
+tipo<-"hanning"
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=1024, Hanning")
+
+wr<-128
+tipo<-"rectangle"
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=128, Rectangle")
+
+wr<-512
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=512, Rectangle")
+
+wr<-1024
+spectro(y, f=fr, wl=wr, wn=tipo, flog=TRUE, scale=FALSE, flim=c(0,0.03))
+title("wl=1024, Rectangle")
+
+
+# (c) Considera el caso en el que existe solapamiento entre ventanas consecutivas
+# de ovpl=10% ,25% y 50%. En este caso, limita el cálculo a ventanas de Hanning
+# y Rectangle (Calcula para wl=128 y 1024). 
+```
+
+
+
+
+
+
+
+
+# Ejercicio 2: ------------------------------------------------------------
+
+Analiza el contenido frecuencial de la onda "tico" contenida en el paquete seewave. Carga dicha onda empleando el comando:
+
+```{r}
+library(seewave)
+data(tico)
+```
+
+(a) Representa la onda, el valor absoluto de la onda al cuadrado (conocido también como la energía de la onda) en función del tiempo REAL teniendo en cuenta cuál es la frecuencia de muestreo de la señal. 
+
+(b) Usa la envolvente de la amplitud de la onda para medir el patrón temporal. Empleen para ello el comando timer.  
+
+(c) Calcula la STFT usando el comando spectro y variando la anchura de la ventana y la función ventana  (usa ventana hanning, por defecto).
+
+(d) Calcula el espectro promedio empleando la función `meanspec()` empleando distintas anchuras de la ventana de Hanning (wl=512, 4096) y fracciones de solapamiento de las ventanas (ovlp=5,50).
+
+_Respuesta:_
+
+
+# Ejercicio 3: ------------------------------------------------------------
+
+
+Vamos a calcular la transformada de Gabor continua empleando el comando `cgt` incluido en el paquete `Rwave`, el cual implementa la CGT usando una ventana gaussiana,
+
+Argumentos para llamar a `cgt`:
+  
+  `cgt(input, nvoice, freqstep, scale=1, plot=TRUE)`
+
+- _input_ = señal de entrada.
+
+- _nvoice_ = número de frecuencias a las que la transformada de Gabor se calcula.
+
+- $\delta_f$=_freqstep_ = frecuencia de muestreo en el eje de frecuencias.
+
+- _scale_ = anchura de la función ventana (sigma de la gaussiana). 
+
+Calculemos la transformada Gabor con un número de frecuencias $n_f = 50$, $\delta_f = .005$ y escala
+$\sigma = 25$. Esto se corresponde a evaluar frecuencias (en la transformada) entre 0 y $f_{\rm max} = n_f \times \delta_f\, /\, 2 = 0.125$ Hz . Nótese que la frecuencia del seno es $1/32=`r 1/32`$, significativamente menor que $f_{\rm max}$
+
+Datos del ejercicio:
+
+```{r, include=T}
+x <- 1:512
+freqsin=1/32
+sinwave <- sin(2*pi*x*freqsin)
+```
+
+Representa la señal en el tiempo, así como el módulo de la transformada de gabor resultante (usar función `cgt` en R). Comenta los resultados.
+
+_Respuesta:_
+
+```{r}
+require(Rwave)
+x<-1:512
+freqsin<-1/32
+nvoice<-50
+freqstep<-0.005
+scale<-25
+isize<-length(x)
+
+sinwave<-sin(2*pi*x*freqsin)
+plot(sinwave, type="l")
+
+# Representación del módulo
+gabor<-cgt(sinwave, nvoice, freqstep, scale)
+abline(h=1/32)
+
+# Representación de la fase
+#par(mfrow=c(1,2))
+image(1:isize, seq(0, nvoice*freqstep/2, length=nvoice),Arg(gabor), xlab="Tiempo", ylab="Frecuencia")
+title("Fase de la Transformada de Gabor")
+#par(mfrow=c(1,1))
+```
+
+
+
+
+
+# Ejercicio 4: ------------------------------------------------------------
+
+Representa en el tiempo la siguiente función, así como su transformada de Gabor y comenta los resultados.
+
+```{r, include=T}
+x<- 1:512
+chirp <- sin(2*pi*(x + 0.002*(x-256)*(x-256))/16)
+```
+
+_Respuesta:_
+
+```{r ejer4}
+plot(chirp, type="l")
+# Representación del módulo
+gabor<-cgt(chirp, 50, freqstep = 0.005, scale=16)
+```
+
+
+# Ejercicio 5:-------------------------------------------------------------
+
+Se propone calcular la transformada de wavelet de la siguiente función sinusoidal
+
+```{r, include=FALSE}
+x <- 1:512
+sinwave <- sin(2*pi*x/32)
+```
+
+Empleamos la función `cwt` del paquete `Rwave`, la cual emplea como wavelet madre la función de Morlet. `cwt` discretiza las escalas de forma logarítmica en potencias de dos, de modo que $s = s_{j,k} = 2^{j+k/n_v}$; $j = 1,..., n_o$ enumera las potencias de 2 o "escalas" (eje $y$ en escalograma), $k = 0,..., n_v-1$ enumera el número de escalas entre dos potencias consecutivas de 2 (eje $x$ en escalograma)
+
+`cwt` básicamente tiene tres argumentos: la señal de entrada, el número de escalas, $n_o$, y el valor $n_v$. La frecuencia central de la wavelet Morlet, $\omega_0$ es, por defecto, $2*\pi$, pero que puede modificarse introduciendo el argumento opcional $w0={valor}$.
+La función `cwt` devuelve una matriz compleja de dos dimensiones (traslaciones y escalas). El módulo y 
+el argumento de la transformada wavelet pueden ser visualizados 
+utilizando las funciones `image` o `persp`. Por defecto, `cwt` muestra una imágen 2D del módulo de la transformada wavelet.
+
+Procedemos a calcular la `cwt` de la función `sinwave` con $n_o = 5$ y $n_v = 12$. Con `scales` modificas el eje $y$ para que represente la escala $s$
+Usa:
+```{r, include=FALSE}
+source('scales.R')
+require(Rwave)  # cwt, cleanph
+```
+
+Carga la función scales para hacer la transformación del eje de escala (eje $y$), que por defecto R normaliza al hacer el plot con `cwt`. Puedes encontrar esta función en el aula virtual.
+
+_Respuesta:_
+
+
+# Ejercicio 6: ------------------------------------------------------------
+
+Representa la siguiente señal en el tiempo, así como el módulo de su transformada Wavelet. 
+
+```{r, include=T}
+x<- 1:512
+chirp <- sin(2*pi*(x + 0.002*(x-256)*(x-256))/16)
+```
+
+Utiliza $n_o = 5$ y $n_v = 12$  como en el ejercicio anterior.
+
+Usa la siguiente señal: 
+
+```{r, include=T}
+x<- 1:512
+chirp <- sin(2*pi*(x + 0.002*(x-256)*(x-256))/16)
+```
+
+Utiliza $n_o = 5$ y $n_v = 12$  como en el ejercicio anterior.
+
+_Respuesta:_
+
+
+# Ejercicio 7: ------------------------------------------------------------
+
+Busca varias aplicaciones reales de las transformadas de wavelet, descríbelas brevemente y desarrolla un ejemplo breve comentado (puede ser en otro lenguaje diferente a R, pero en una hoja de presentación con código similar a rmarkdown, por ejemplo un cuaderno de jupiter para python, live para Matlab, etc.)
+
+_Respuesta:_
+
+*   _Detección de discontinuidades y fallos._
+
+*   _Supresión de señales y eliminación de ruido._
+
+*   _Compresión de señales._
+
+*   _Detección de autosimilitudes._
+

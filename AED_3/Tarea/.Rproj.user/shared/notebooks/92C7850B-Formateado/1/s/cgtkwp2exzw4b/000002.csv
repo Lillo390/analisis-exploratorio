@@ -1,0 +1,4 @@
+"0","```r
+fert_tidy<-pivot_longer(fert, names_to=\"Year\", values_to=\"Fertility\", cols=-\"country\")
+mort_tidy<-pivot_longer(mort, names_to=\"Year\", values_to=\"Fertility\", cols=-\"country\")
+```"

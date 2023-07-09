@@ -1,0 +1,151 @@
+---
+title: "Tarea: importación de datos en R"
+subtitle: Análisis Exploratorio de Datos, Máster en Ciencia de Datos- UV
+author: "Daniel Lillo Plaza"
+#Pone la fecha de generación del documento
+date:  "`r Sys.Date()`"  #Pondría la fecha del día actual
+# Para que en lugar de "Contents" ponga "Indice" al incluir la tabla de contenido
+
+params:
+  lang: ES
+lang: "`r switch(params$lang, ES = 'es-ES', EN = 'en-US')`"
+
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+  html_notebook:
+    echo: yes
+    number_sections: yes
+    toc: yes
+  html_document:
+    echo: yes
+    number_sections: yes
+    theme: lumen
+    toc: yes
+language:
+  label:
+    fig: 'Figura '
+    tab: 'Tabla '
+    eq: 'Ecuación '
+    thm: 'Teorema '
+    lem: 'Lema '
+    def: 'Definición '
+    cor: 'Corolario '
+    prp: 'Proposición '
+    exm: 'Ejemplo '
+    exr: 'Ejercicio '
+    proof: 'Demostración. '
+    remark: 'Nota: '
+    solution: 'Solución. '
+
+---
+
+
+---
+
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+# CONFIGURACIÓN GENERAL
+library(knitr)
+options(width = 100)
+# Opciones generales chunks
+opts_chunk$set(echo=T,message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = './figure/')
+
+#options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+  
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+#knit_hooks$set(plot = knitr:::hook_plot_html)
+```
+
+
+# Introducción.
+
+El objetivo de esta tarea es realizar la importación de cinco archivos diferentes, cada uno de ellos en un formato distinto.
+
+# Apartado. Instalación de paquetes
+
+Incluimos todas las librerías necesarias para la ejecucion del código en la siguiente lista. **packages = c("tidyverse","knitr","readxl", "haven", "BiocManager", "BiocManager::install("rhdf5")")**
+
+Si la librería no está instalada se instalará y cargará, si no solo se cargará.
+
+
+```{r}
+# Especificamos las librerías necesarias en esta lista
+
+packages = c("tidyverse","knitr", "readxl", "haven","BiocManager")
+
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed and loaded
+package.check <- lapply(packages, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+  if (!require("rhdf5", character.only = TRUE)) {
+    BiocManager::install("rhdf5")
+    library("rhdf5", character.only = TRUE)
+  }
+
+#verify they are loaded
+search()
+
+```
+
+```{r}
+BreadBasket<-read.csv("./data/BreadBasket_DMS.csv")
+save(BreadBasket, file="./data/BreadBasket.RData")
+
+Deposito <- read.delim("./data/DFP1_11122015 124700.csv")
+save(Deposito, file="./data/Deposito.RData")
+
+ERCA<- readxl::read_excel("./data/ERCA NUEVA2  20161103.xls", 
+    sheet = "Hoja1 - Tabla 1", col_types = c("numeric", 
+        "numeric", "date", "text", "date", 
+        "date", "numeric", "numeric", "text", 
+        "date", "text", "text", "text", "text", 
+        "text", "text", "text", "text", "text", 
+        "text", "numeric", "numeric", "numeric", 
+        "numeric", "text", "text", "text", 
+        "text", "text", "text", "text", "text", 
+        "text", "numeric", "numeric", "skip", 
+        "numeric", "numeric", "numeric", 
+        "numeric", "numeric", "numeric", 
+        "numeric", "numeric", "text", "numeric", 
+        "numeric", "numeric", "text", "numeric", 
+        "numeric", "numeric", "numeric", "numeric", "numeric", 
+        "numeric", "numeric", "numeric"))
+save(ERCA, file="./data/ERCA.RData")
+
+Pacientes1<- read_excel("data/subjectInfo.xlsx", 
+     sheet = "measurments")
+Pacientes2<- read_excel("data/subjectInfo.xlsx", 
+     sheet = "neuropathy")
+Pacientes3<- read_excel("data/subjectInfo.xlsx", 
+     sheet = "tuning fork NSS")
+Pacientes4<- read_excel("data/subjectInfo.xlsx", 
+     sheet = "mobility")
+Pacientes5<- read_excel("data/subjectInfo.xlsx", 
+     sheet = "Durometer")
+Pacientes<-list(Pacientes1, Pacientes2, Pacientes3, Pacientes4, Pacientes5)
+save(Pacientes, file="./data/Pacientes.RData")
+
+microRNA_Neumo <- read_sav("data/microRNAsNeumonia.sav")
+save(microRNA_Neumo, file="./data/microRNA_Neumo.RData")
+
+b<-h5dump("./data/Tensiones1.hdf5")
+Tensiones<-data.frame(b["input"])
+colnames(Tensiones)<-b$VarNameSelec
+save(Tensiones, file="./data/Tensiones.RData")
+```
+
+

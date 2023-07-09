@@ -1,0 +1,120 @@
+---
+title: "Tarea "
+subtitle: Análisis Exploratorio de Datos, Máster en Ciencia de Datos- UV
+author: "Daniel Lillo Plaza"
+#Pone la fecha de generación del documento
+date:  "`r Sys.Date()`"  #Pondría la fecha del día actual
+# Para que en lugar de "Contents" ponga "Indice" al incluir la tabla de contenido
+
+params:
+  lang: ES
+lang: "`r switch(params$lang, ES = 'es-ES', EN = 'en-US')`"
+
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+  html_notebook:
+    echo: yes
+    number_sections: yes
+    toc: yes
+  html_document:
+    echo: yes
+    number_sections: yes
+    theme: lumen
+    toc: yes
+language:
+  label:
+    fig: 'Figura '
+    tab: 'Tabla '
+    eq: 'Ecuación '
+    thm: 'Teorema '
+    lem: 'Lema '
+    def: 'Definición '
+    cor: 'Corolario '
+    prp: 'Proposición '
+    exm: 'Ejemplo '
+    exr: 'Ejercicio '
+    proof: 'Demostración. '
+    remark: 'Nota: '
+    solution: 'Solución. '
+
+---
+
+
+---
+
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+# CONFIGURACIÓN GENERAL
+library(knitr)
+options(width = 100)
+# Opciones generales chunks
+opts_chunk$set(echo=T,message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = './figure/')
+
+#options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+  
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+#knit_hooks$set(plot = knitr:::hook_plot_html)
+```
+
+
+# Introducción.
+
+El objetivo de esta tarea es  ... bla bla bla
+
+# Apartado. Instalación de paquetes
+
+Incluimos todas las librerías necesarias para la ejecucion del código en la siguiente lista. **packages = c("tidyverse","knitr","dplyr", "readr", "tidyr","lubridate")**
+
+Si la librería no está instalada se instalará y cargará, sino solo se cargará.
+
+
+
+
+```{r}
+# Especificamos las librerías necesarias en esta lista
+
+packages = c("tidyverse","knitr", "dplyr","readr", "tidyr", "lubridate")
+
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed and loaded
+package.check <- lapply(packages, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+#verify they are loaded
+search()
+
+```
+
+```{r}
+fert <- read_csv("data/children_per_woman_total_fertility.csv")
+mort <- read_csv("data/child_mortality_0_5_year_olds_dying_per_1000_born.csv")
+```
+
+```{r}
+fert_tidy<-pivot_longer(fert, names_to="Year", values_to="Fertility", cols=-"country")
+mort_tidy<-pivot_longer(mort, names_to="Year", values_to="Fertility", cols=-"country")
+```
+
+```{r}
+load("data/Deposito.RData")
+class(Deposito$FECHA)
+class(Deposito$HORA)
+
+Deposito<-unite(Deposito, FechaHora, FECHA, HORA)
+
+Deposito$FechaHora<-dmy_hms(Deposito$FechaHora)
+```

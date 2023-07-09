@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": true,
+        "libraryPath": "C:/Users/1/OneDrive - Universitat de Valencia/Documentos/R/win-library/4.1",
+        "installDependencies": true
+    }
+}

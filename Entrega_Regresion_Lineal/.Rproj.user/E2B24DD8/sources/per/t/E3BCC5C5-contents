@@ -1,0 +1,369 @@
+---
+# Cabecera YAML: especifica las opciones de configuración del documento (https://m-clark.github.io/Introduction-to-Rmarkdown/customization.html)
+#Opciones de cabecera en: https://cran.r-project.org/web/packages/ymlthis/vignettes/yaml-fieldguide.html
+title: "Regresión lineal simple y múltiple"
+subtitle: Análisis Exploratorio de Datos. Máster en Ciencia de Datos - UV
+author: "Carlos Blom-Dahl Ramos y Daniel Lillo Plaza"
+date:  '`r format(Sys.Date(),"%d-%m-%Y")`'  #Pondría la fecha del día actual
+params:
+  lang: ES
+lang: "`r switch(params$lang, ES = 'es-ES', EN = 'en-US')`"
+output:
+  # html_document:
+  #   echo: yes
+  #   number_sections: yes
+  #   theme: lumen 
+  #   toc: yes
+  # html_notebook:
+  #   echo: yes
+  #   number_sections: yes
+  #   toc: yes
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+language:
+  label:
+    fig: 'Figura '
+    tab: 'Tabla '
+    eq: 'Ecuación '
+    thm: 'Teorema '
+    lem: 'Lema '
+    def: 'Definición '
+    cor: 'Corolario '
+    prp: 'Proposición '
+    exm: 'Ejemplo '
+    exr: 'Ejercicio '
+    proof: 'Demostración. '
+    remark: 'Nota: '
+    solution: 'Solución. '
+urlcolor: blue
+lof: TRUE #list of figures
+lot: TRUE #list of tables
+---
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+
+# CONFIGURACIÓN GENERAL
+library(knitr)
+options(width = 100)
+# Opciones generales chunks
+
+#include = FALSE evita que el código y los resultados aparezcan en el archivo terminado. R Markdown aún ejecuta el código en el fragmento y los resultados pueden ser utilizados por otros fragmentos.
+#echo = FALSE evita que el código, pero no los resultados, aparezcan en el archivo terminado. Esta es una manera útil de incrustar figuras.
+#message = FALSE evita que los mensajes generados por el código aparezcan en el archivo finalizado.
+#warning = FALSE evita que las advertencias generadas por el código aparezcan en el final.
+
+#fig.cap = "..." agrega un título a los resultados gráficos.
+
+opts_chunk$set(echo=T, message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = './figure/',fig.width=5.5, fig.height=3.5)
+
+#options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+  
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+#knit_hooks$set(plot = knitr:::hook_plot_html)
+```
+
+# Librerías cargadas
+
+Las librerías empleadas para la correcta ejecución del código las encontramos a continuación: 
+`packages = c("kableExtra","tidyverse","knitr", "ggplot2", "car")`
+
+```{r, echo=FALSE, message=FALSE}
+# Especificamos las librerías necesarias en esta lista
+
+packages = c("kableExtra","tidyverse","knitr", "ggplot2", "car")
+
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed and loaded
+package.check <- lapply(packages, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE,repos='http://cran.rediris.es')
+    library(x, character.only = TRUE)
+  }
+})
+
+#verify they are loaded
+search()
+```
+
+# Introducción.
+
+En la librería MASS puedes encontrar un famoso banco de datos llamado `Cars93` que recoge información
+sobre 93 coches en venta en los Estados Unidos en 1993. La base contiene 27 variables relativas a 93
+coches. Para saber qué información está contenida en las variables puedes escribir: _?Cars93_. En este
+estudio vamos a usar la base de datos **cars.csv** que encontraréis en el aula virtual (contenido en la carpeta de este proyecto también). Dicha base de datos
+contiene 15 de las 27 variables del banco de datos `Cars93` indicado anteriormente.
+
+Procedemos a leer el fichero de datos:
+
+```{r}
+cars <- read.csv2("./data/cars.csv")
+```
+# Ejercicio 1.
+
+Considera la variable respuesta `Price` relacionándola con el predictor `MPG.city`.
+
+1. Evalúa el efecto de `MPG.city` sobre `Price`.
+
+2. Obtén la recta de mínimos cuadrados. Interpreta los resultados obtenidos.
+
+3. Dibuja el diagrama de dispersión, la recta de regresión y las bandas de confianza al 90 \%.
+
+4. ¿Te parece adecuado haber realizado regresión lineal o es preferible otro tipo de regresión?. Ajusta el modelo que te parezca más adecuado y, en dicho caso, dibuja nuevamente las bandas de confianza correspondientes al 90 \%.
+
+5. ¿Qué precio mínimo se espera para aquellos coches con un consumo de 12 litros a los 100 km por ciudad? Calcula e interpreta el intervalo de confianza y el de predicción.
+
+-------------------------------------------------------------------------------
+
+
+```{r}
+ggplot(cars, mapping=aes(x=MPG.city, y=Price))+geom_point()+
+geom_smooth(method = "lm", se=TRUE, level=0.9)+
+ggtitle("Diagrama de dispersión, recta=Price~MPG.city", subtitle="Confianza al 90%")
+cor(cars$MPG.city, cars$Price)
+```
+
+**No** parece haber mucha relación **LINEAL** entre las variables, pero **sí cuadrática**. Lo comprobamos en el siguiente gráfico.
+
+```{r}
+ggplot(cars, mapping=aes(x=MPG.city, y=Price))+geom_point()+
+geom_smooth(method = "lm", se=TRUE, level=0.9, formula = y ~ poly(x, 2))+
+ggtitle("Diagrama de dispersión, curva=Price~MPG.city+(MPG.city)^2",
+subtitle="Confianza al 90%")
+```
+
+Para intentar aumentar la relación lineal entre las variables,  vamos a realizar una transformación logarítmica de ambas (para no tener problemas de heterocedasticidad) y aplicaremos una transformación de raíz cuadrada para corregir la relación cuadrática expuesta anteriormente.
+
+```{r}
+ggplot(cars, mapping=aes(x=sqrt(log(MPG.city)), y=log(Price)))+geom_point()+
+geom_smooth(method = "lm", se=TRUE, level=0.9, formula=y~x)+
+ggtitle("Diagrama de dispersión, recta=log(Price)~sqrt(log(MPG.city))",
+subtitle="Confianza al 90%")
+cor((log(cars$MPG.city))^(1/2), log(cars$Price))
+```
+
+Vemos como el grado de correlación lineal aumenta (en módulo)
+sustancialmente: pasamos de `r cor(cars$MPG.city, cars$Price)` a `r cor((log(cars$MPG.city))^(1/2), log(cars$Price))`.
+
+Si quisiéramos mejorar el coeficiente de correlación, ya que sabemos que la relación entre estas dos variables es cuadrática, para corregir más aún la heterocedasticidad podemos estudiar la relación entre _(log(cars\$MPG.city))^(1/32)_ y _(log(cars\$Price))^(1/16)_. Lo importante es mantener la relación cuadrática.
+
+```{r}
+cor((log(cars$MPG.city))^(1/32), (log(cars$Price))^(1/16))
+```
+
+Vemos como aumenta todavía más, y este proceso lo podríamos repetir indefinidamente. Si tomamos un caso extremo, por ejemplo _(log(cars\$MPG.city))^(1/128)_ y _(log(cars\$Price))^(1/64)_ obtenemos lo siguiente:
+
+```{r}
+cor((log(cars$MPG.city))^(1/128), (log(cars$Price))^(1/64))
+```
+
+Nuevamente y sin sorpresas, vuelve a aumentar.  En cualquiera de los casos, vemos cómo al aumentar `MPG.city` disminuye `Price` lo cual tiene sentido, ya que `MPG.city` es la inversa del consumo de un coche _(1 MPG=235,21 l/100km, 30 MPG=7,84 l/100km)_ y los coches más caros, como deportivos o todoterrenos, tienden a consumir más. Además, hemos establecido que guardan una relación cuadrática entre ellas.
+
+Por todo lo expuesto hasta ahora, vamos a crear el siguiente modelo.
+
+```{r, fig.width=7, fig.height=4}
+fit1<-lm(log(Price)~poly(log(MPG.city),2), data=cars)
+fit1.s<-summary(fit1)
+fit1.s
+
+par(mfrow=c(1,2))
+plot(exp(fit1$fitted.values)~exp(log(cars$MPG.city)), ylim=c(0,65),
+main="Valores ajustados", ylab="Precio", xlab="MPG.city")
+plot(cars$Price~cars$MPG.city, ylim=c(0,65),
+main="Datos reales",ylab="Precio", xlab="MPG.city")
+par(mfrow=c(1,1))
+```
+
+Como podemos ver, hemos obtenido un $R^2$ de `r fit1.s$r.squared`, lo cual era exactamente lo que esperábamos ya que, en el caso de un modelo de regresión simple, el coeficiente de determinación coincide con el cuadrado del coeficiente de correlación lineal, el cual ya habíamos calculado anteriormente haciendo `cor((log(cars$MPG.city))^(1/2), log(cars$Price))=``r cor((log(cars$MPG.city))^(1/2), log(cars$Price))`. Comprobamos fácilmente que $$(`r cor((log(cars$MPG.city))^(1/2), log(cars$Price))`)^2=`r fit1.s$r.squared`$$
+
+
+# Ejercicio 2.
+
+1. Considerando un tope de 10 variables, encuentra el número óptimo de variables a incluir en un modelo predictivo de `Price`, según los criterios _$R^2$, BIC y AIC_. ¿Qué variables incluye el modelo obtenido?. Interpreta los coeficientes obtenidos, ¿consideras que tiene sentido?.
+
+```{r}
+library(leaps)
+cars$Type<-as.factor(cars$Type)
+cars$Origin<-as.factor(cars$Origin)
+
+fit10<- regsubsets(Price~. , data=cars, nvmax=9)
+fit10.s<-summary(fit10)
+
+# Buscamos el mayor R^2
+max_r2<-fit10.s$which[which.max(fit10.s$rsq),]
+names(max_r2[which(max_r2==TRUE)])
+
+# Buscamos el menor BIC
+min_bic<-fit10.s$which[which.min(fit10.s$bic),]
+names(min_bic[which(min_bic==TRUE)])
+
+# Buscamos el menor AIC
+min_aic<-fit10.s$which[which.min(fit10.s$cp),]
+names(min_aic[which(min_aic==TRUE)])
+```
+
+
+2. Selecciona el mejor modelo con el método `stepwise`.
+
+```{r}
+model0 <- lm(Price ~ . , data=cars)
+aj_step0 <- step(model0)
+```
+El mejor modelo es el último de los mostrados anteriormente, con un AIC de 310.06.
+
+3. Selecciona el mejor modelo con el método `stepwise` considerando la variable `Passengers` como factor.
+
+```{r}
+cars$Passengers<-as.factor(cars$Passengers)
+model1 <- lm(Price ~ . , data=cars)
+aj_step1 <- step(model1)
+aj_step1.s<-summary(aj_step1)
+```
+
+4. Depura el modelo anterior (_apartado 3_) sólo si te parece oportuno y contesta a las siguientes preguntas:
+¿Qué \% de la varianza de `Price` explica el modelo?
+¿Cuál es la variable menos explicativa?. ¿Cuál es su efecto sobre `Price`?
+
+_Respuesta: depuraremos el modelo en función de los grupos que nos presenta la variable "type" y lo haremos de acuerdo a aquellos que tengan medias de precio más similares._
+
+```{r}
+cars%>%group_by(Type)%>%summarize(mean(Price))
+```
+
+```{r}
+aj_step1.s
+
+# Vamos a juntar los grupos "Sporty" y "Van"
+
+cars_prueba<-cars
+cars_prueba$Type<-factor(cars_prueba$Type, levels=c("Compact", "Large", "Midsize", "Small",
+"Sporty", "Van"), labels=c("Compact", "Large", "Midsize", "Small", "Van", "Van"))
+
+model2 <- lm(Price ~ . , data=cars_prueba)
+aj_step2 <- step(model2)
+aj_step2.s<-summary(aj_step2)
+aj_step2.s
+
+# Vamos a juntar los grupos "Sporty", "Van" y "Compact"
+
+cars_prueba2<-cars
+cars_prueba2$Type<-factor(cars_prueba2$Type, levels=c("Compact", "Large", "Midsize", "Small",
+"Sporty", "Van"), labels=c("Van", "Large", "Midsize", "Small", "Van", "Van"))
+
+model3 <- lm(Price ~ . , data=cars_prueba2)
+aj_step3 <- step(model3)
+aj_step3.s<-summary(aj_step3)
+aj_step3.s
+
+# Vamos a juntar los grupos "Sporty", "Van" y "Compact" por un lado
+# y "Midsize" con "Large" por otro
+
+cars_prueba3<-cars
+cars_prueba3$Type<-factor(cars_prueba3$Type, levels=c("Compact", "Large", "Midsize", "Small",
+"Sporty", "Van"), labels=c("Van", "Large", "Large", "Small", "Van", "Van"))
+
+model4 <- lm(Price ~ . , data=cars_prueba3)
+aj_step4 <- step(model4)
+aj_step4.s<-summary(aj_step4)
+aj_step4.s
+
+# Vamos a juntar los grupos "Sporty", "Van", "Compact" y "Small" por un
+# lado y "Midsize" con "Large" por otro.
+
+cars_prueba4<-cars
+cars_prueba4$Type<-factor(cars_prueba4$Type, levels=c("Compact", "Large", "Midsize", "Small",
+"Sporty", "Van"), labels=c("Van", "Large", "Large", "Van", "Van", "Van"))
+
+model5 <- lm(Price ~ . , data=cars_prueba4)
+aj_step5 <- step(model5)
+aj_step5.s<-summary(aj_step5)
+aj_step5.s
+```
+
+_La variabilidad que explica nuestro modelo es el coeficiente de determinación , $R^2$, el cual es `r aj_step5.s$r.squared`. La variable menos explicativa es `OriginUSA`, ya que en el contraste asociado a suponer que su coeficiente es nulo obtenemos el mayor p-valor en comparación con el resto. Suponiendo constante el efecto del resto de variables independientes sobre las variable respuesta, tenemos que un aumento de una unidad en la variable `OriginUSA`provocará un aumento de 0.12330 unidades en el precio._
+
+5. Realiza el diagnóstico de tu modelo, sin emprender ninguna acción, e indica los problemas que presenta. 
+_Ayuda: Para ver los valores influyentes podéis utilizar los comandos `influencePlot` e `influence.measures` de la librería `car`. Para la normalidad usar el qqplot y/o el test de Shapiro-Wilk. Para la linealidad y homocedasticidad evaluar los residuos._
+
+```{r, fig.width=10, fig.height=5}
+par(mfrow=c(2,3))
+for (i in 1:5){
+  plot(aj_step5, which=i)
+}
+par(mfrow=c(1,1))
+
+shapiro.test(aj_step5.s$residuals)
+```
+
+_Respuesta: el problema más evidente que presenta el modelo es falta de normalidad de los residuos, ya que no se ajustan correctamente en el QQ-plot y el p-valor obtenido en la prueba de Shapiro-Wilk es muy significativo. Además, no parece haber homocedasticidad ya que en el primer gráfico se aprecia como los residuos se van alejando cada vez más de la línea central de tendencia._
+
+_En cuanto a los outliers, consideraremos que un punto es influyente si combina un alto leverage con un alto residuo estandarizado. También lo consideraremos influyente si marca un valor crítico en su distancia de Cook. Atendiendo a esto, el punto correspondiente al residuo 59 tiene una distancia de Cook superior al resto, y aunque podrñiamos considerarlo no influyente, a esto se suma que su residuo estandarizado está por encima del valor `r sqrt(3)`. En teoría, los resiudos estandarizados siguen una distribución N(0,1), por lo que a tres desviaciones típicas de la media deberíamos de encontrar aproximadamente el 99\% de los datos. Al hacer la raíz cuadrada, nos quedamos en el intervalo $[0, \sqrt{3}]$. Por ello consideramos que estar por encima de este valor se corresponde con tener un residuo grande. Además en el QQ-plot el valor 59 es uno de los que más se alejan de la recta._
+
+_La linealidad no parece verse muy afectada, pese a que se dibuja cierta forma de parábola en los residuos._
+
+6. Emprende ahora las acciones que te parezcan oportunas e indica los problemas que has conseguido solucionar o disminuir.
+
+_En primer lugar vamos a revisar la observación número 59 de nuestro banco de datos:_
+
+```{r}
+cars_prueba4[59,]
+```
+
+_Como podemos ver, esta obervación se aleja mucho del resto de las de su grupo. Al comienzo vimos que la media más alta dentro de un grupo era 27.21818, en el grupo Midsize. Es cierto que ahora hay menos grupos, ya que los hemos reorganizado en 2, pero aún así 61.9 se aleja mucho de cualquier media de cualquier grupo. Dado que el objetivo de este estudio es crear un modelo que explique de la mejor forma posible todos los datos, vamos a considerar la eliminación de esta observación._
+
+_Probaremos también a realizar una transformación de Box-Cox sobre la variables respuesta seleccionando el $\lambda$ óptimo._
+
+```{r, fig.width=10, fig.height=5}
+library(dplyr)
+library(MASS)
+cars_prueba5<-cars_prueba4%>%filter(Price<61.9)
+
+aj_step6 <- lm(formula = Price ~ Type + Horsepower + RPM + Wheelbase + Width + Origin,
+data = cars_prueba5)
+boxcox(aj_step6, lambda = seq(-1,1, length = 10))
+
+# Como el óptimo lo alcanzamos en lambda=0, realizamos una transforma-
+# ción logarítmica de la variable respuesta
+cars_prueba5$Price<-log(cars_prueba5$Price)
+aj_step6<-lm(formula = Price ~ Type + Horsepower + RPM + Wheelbase + Width + Origin,
+data = cars_prueba5)
+aj_step6.s<-summary(aj_step6)
+aj_step6.s
+
+par(mfrow=c(2,3))
+for (i in 1:5){
+  plot(aj_step6, which=i)
+}
+par(mfrow=c(1,1))
+
+shapiro.test(aj_step6.s$residuals)
+```
+
+_Se puede apreciar una notable mejora del modelo. Por supuesto todavía no cumple con todas las hipótesis de normalidad y demás, pero sin embargo si considerásemos un nivel de significatividad $\alpha=0.01$ podríamos asumir mediante el test de Shapir-Wilk la normalidad de los residuos y ya no tenemos ninguno de ellos fuera del intervalo $[0, \sqrt{3}]$ tras normalizarlos._
+
+7. Con el modelo final obtenido, obtén la predicción del precio para un coche en la mediana de los predictores.
+
+_Respuesta: para las variables de tipo categórico emplearemos la moda en vez de la mediana._
+
+```{r}
+library(modeest)
+names(aj_step6$coefficients)
+
+data<-data.frame("Type"=mlv(cars_prueba5$Type, method="mvf"), "Horsepower"=
+median(cars_prueba5$Horsepower), "RPM"=
+median(cars_prueba5$RPM), "Wheelbase"=
+median(cars_prueba5$Wheelbase), "Width"=
+median(cars_prueba5$Width), "Origin"=
+mlv(cars_prueba5$Origin, method="mvf"))
+
+exp(predict(aj_step6, newdata=data, interval="confidence"))
+
+```

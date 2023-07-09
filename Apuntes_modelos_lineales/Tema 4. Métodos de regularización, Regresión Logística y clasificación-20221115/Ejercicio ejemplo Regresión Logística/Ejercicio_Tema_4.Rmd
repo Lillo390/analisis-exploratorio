@@ -1,0 +1,189 @@
+---
+title: "Ejercicio Tema 4. Métodos de regularización, Regresión Logística y validación clasificada."
+subtitle: "Máster en Ciencia de Datos. Módulo: Análisis exploratorio de datos"
+author: "Ana Navarro Quiles"
+date: "Curso 2022/2023"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Objetivos: 
+
+Se pretende practicar los conceptos relacionados con los métodos de regularización (Regresión Ridge, Lasso y Elastic Net), Regresión Logística y validación clasificada 
+
+# Ejercicios propuestos 
+
+## Ejercicio 1
+
+El banco de datos **diabetes** contiene información de seguimiento de 149 pacientes con diabetes. El objetivo es estudiar el efecto de las variables sobre la mortalidad. Las variables contenidas en el fichero son las siguientes:
+
+* Mortalidad por diabetes, variable _MORT_
+* Edad del paciente, variable _EDAT_
+* Índice de masa corporal, variable _BMI_
+* Resultado del electrocardiograma, variable _ECG_
+* Antecedentes coronarios, variable _CHD_
+* Presión arterial sistólica y diastólica, variables _SBP_ y _DBP_, respectivamente
+
+```{r,echo=F}
+load('datosTema2.Rdata')
+
+```
+
+a) Ajusta el modelo de regresión más adecuado para analizar la mortalidad teniendo en cuenta todas las variables indicadas en el enunciado.
+
+-- Calcula el porcentaje de predicciones acertadas usando todos los datos. Para ello, haz la tabla de clasificación correspondiente.
+
+-- ¿Quienes son más propensos a morir por diabetes, los que tienen antecedentes coronarios o los que no?
+
+-- Calcula dicha probabilidad para aquellos pacientes con una edad de 45 años, un índice de masa corporal de 30, un electrocardiograma Normal y una presión SBP=135 y DBP= 70. 
+
+
+```{r,echo=T}
+load('datosTema2.Rdata')
+ajuste.mortalidad.completo <- glm(MORT ~ EDAT+BMI+ECG+CHD+SBP+DBP, data = diabetes,
+                                  family = binomial())
+summary(ajuste.mortalidad.completo)
+
+prob<-predict(ajuste.mortalidad.completo, type="response")
+pred <- factor(prob>0.5,labels= levels(diabetes$MORT))
+
+table(diabetes$MORT,pred)
+130/149*100
+
+
+exp(coef(ajuste.mortalidad.completo)["CHDSi"]) #Es menos probable morir de diabetes
+# si se tiene antecedentes coronarios, la probabilidad de si es un 21% de la que no.
+
+
+predict(ajuste.mortalidad.completo,data.frame(EDAT=45,BMI=30,ECG=c('Normal'),
+                                           SBP=135,DBP=70,CHD=c('Si','No')), 
+                                           type = 'response') 
+# La probabilidad de Si es 0.0158 y de No 0.0705.
+```
+b) Intenta mejorar el modelo anterior utilizando la metodología stepwise para la elección de variables y vuelve a contestar a las preguntas del apartado anterior (considerando en la predicciones las variables que contenga tu nuevo modelo). ¿Hay cambios importantes en las conclusiones?
+
+
+```{r,echo=T}
+ajuste.mortalidad.completo <- glm(MORT ~ EDAT+BMI+ECG+CHD++SBP+DBP, data = diabetes,
+                                  family = binomial())
+ajuste.mortalidad<- step(ajuste.mortalidad.completo , direction = 'both',trace=0)
+summary(ajuste.mortalidad)
+
+prob<-predict(ajuste.mortalidad, type="response")
+pred <- factor(prob>0.5,labels= levels(diabetes$MORT))
+table(diabetes$MORT,pred)
+131/149*100
+
+exp(coef(ajuste.mortalidad)["CHDSi"]) #Es menos probable morir de diabetes si 
+# se tiene antecedentes coronarios, la probabilidad de si es un 21% de la que no.
+
+predict(ajuste.mortalidad,data.frame(EDAT=45,ECG=c('Normal'),CHD=c('Si','No')),
+        type = 'response') 
+```
+c) Intenta mejorar el modelo anterior utilizando la metodología regsubsets para la elección de variables y vuelve a contestar a las preguntas del apartado anterior (considerando en la predicciones las variables que contenga tu nuevo modelo). ¿Hay cambios importantes en las conclusiones?
+
+```{r,echo=T}
+library(leaps)
+ajuste.mortalidad.reg <- regsubsets(MORT ~ EDAT+BMI+ECG+CHD+SBP+DBP, data = diabetes)
+resumen<-summary(ajuste.mortalidad.reg)
+which.min(resumen$cp)
+colnames(resumen$which)[resumen$which[2,]==T]
+
+ajuste.mortalidad_2 <- glm(MORT ~ EDAT+ECG, data = diabetes,family = binomial())
+
+prob<-predict(ajuste.mortalidad_2, type="response")
+pred <- factor(prob>0.5,labels= levels(diabetes$MORT))
+table(diabetes$MORT,pred)
+128/149*100
+
+# No podemos contestar con criterio la pregunta, dado que ya no está la variable ECG
+
+AIC(ajuste.mortalidad,ajuste.mortalidad_2) # perdemos respecto al de stepwise un poco
+BIC(ajuste.mortalidad,ajuste.mortalidad_2) # Ganamos respecto al de stepwise un poco
+anova(ajuste.mortalidad,ajuste.mortalidad_2,test='Chisq')
+#Vemos que CHD no es significativo
+```
+
+c) Ahora queremos obtener información sobre el electrocardiograma a partir del resto de variables (excepto muerte).
+Utilizar análisis discriminante
+
+```{r,echo=T}
+load('datosTema2.Rdata')
+
+
+library(ggplot2)
+library(ggpubr)
+
+plot1 <- ggplot(data = diabetes, aes(x = EDAT)) +
+  geom_density(aes(colour = ECG)) + theme_bw()
+plot2 <- ggplot(data = diabetes, aes(x = BMI)) +
+  geom_density(aes(colour = ECG)) + theme_bw()
+plot3 <- ggplot(data = diabetes, aes(x = SBP)) +
+  geom_density(aes(colour = ECG)) + theme_bw()
+plot4 <- ggplot(data = diabetes, aes(x = DBP)) +
+  geom_density(aes(colour = ECG)) + theme_bw()
+# la función grid.arrange del paquete grid.extra permite ordenar
+# graficos de ggplot2
+library(gridExtra)
+ggarrange(plot1, plot2, plot3, plot4, common.legend = TRUE)
+
+# La gráfica sugiera que únicamente debemos tener en cuenta EDAT y CHD.
+
+
+library(MASS)
+m_lda <- lda(ECG ~ EDAT+BMI+CHD+SBP+DBP, data=diabetes)
+diabetes2<-diabetes[4:11][-3][-3]
+predLDA<-predict(m_lda, newdata=diabetes2)
+t<-table(diabetes2$ECG, predLDA$class, dnn = c("Clase real", "Clase predicha"))
+t
+n<-sum(t)
+100*sum(diag(t))/n # Aquí simplemente vemos cuantos hemos "acertado". Es decir,
+# que precisión tenemos 85.90604%
+
+# Podriamos hacer una la predicción
+
+p<-predict(m_lda, newdata=data.frame(EDAT=45,BMI=30,SBP=135,DBP=70,CHD=c('Si','No')))
+p #Fijaros que nos da:
+#P(ECG=normal | CHD=Si)=0.0081... P(ECG=Frontera | CHD=Si)=0.90... y P(ECG=Anormal | CHD=Si)=0.0089... Y análogo para no. Si hacemos la suma da 1.
+sum(p$posterior[1,])
+sum(p$posterior[2,])
+
+
+# Hemos dicho que antes parecía solo importar la EDAT y CHD. Vamos a hacerlo solo
+# con esas dos:
+
+
+library(MASS)
+m_lda_1 <- lda(ECG ~ EDAT+CHD, data=diabetes)
+diabetes2<-diabetes[4:11][-2:-6]
+
+predLDA<-predict(m_lda_1, newdata=diabetes2)
+t<-table(diabetes2$ECG, predLDA$class, dnn = c("Clase real", "Clase predicha"))
+t
+n<-sum(t)
+100*sum(diag(t))/n # Aquí simplemente vemos cuantos hemos "acertado". Es decir,
+# que precisión tenemos, 85.23%%
+
+# Podriamos hacer uno predicción
+
+p<-predict(m_lda_1, newdata=data.frame(EDAT=45,CHD=c('Si','No')))
+p #Fijaros que nos da:
+#P(ECG=normal | CHD=Si)=0.0084... P(ECG=Frontera | CHD=Si)=0.897... y 
+# P(ECG=Anormal | CHD=Si)=0.00937... Y análogo para no. Si hacemos la suma da 1.
+sum(p$posterior[1,])
+sum(p$posterior[2,])
+
+
+# Vemos que no hay mucho cambio y nos hemos quitado algunas variables.
+
+
+```
+
+
+

@@ -1,0 +1,3 @@
+"0","i<-match(""city"", names(Chicago))"
+"0","j<-match(""dptp"", names(Chicago))"
+"0","head(Chicago[,-(i:j)])"

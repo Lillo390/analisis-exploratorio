@@ -1,0 +1,7 @@
+"0","# Leemos los datos"
+"0","library(readxl)"
+"0","diabetes <- read_excel(""./data/diabetes.xlsx"")"
+"0","diabetes$NUMPACIE<-NULL"
+"0","diabetes$TABAC<-factor(diabetes$TABAC)"
+"0","diabetes$ECG<-factor(diabetes$ECG)"
+"0","diabetes$CHD<-factor(diabetes$CHD)"

@@ -1,0 +1,7 @@
+"0","Chicago<-read_rds(""chicago.rds"")"
+"0","dim(Chicago)"
+"1","[1]"
+"1"," 6940"
+"1","    8"
+"1","
+"

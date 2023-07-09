@@ -1,0 +1,78 @@
+"0","```r
+library(dplyr)
+library(tidyr)
+# Leemos el nombre del fichero que nos interesa y guardamos a qué sujeto
+# corresponde.
+nombre<-grep(pattern=\".asc$\", x=dir(), value=TRUE)
+fichero<-readLines(nombre)
+Sujeto<-unlist(strsplit(nombre, split=\"_\"))[2]
+
+# Obtenemos la variable SamplingFreq
+SamplingFreq<-grep(pattern=\"SamplingFreq=.\",fichero, value=TRUE)
+SamplingFreq<-unlist(strsplit(SamplingFreq, split=\"=\"))
+SamplingFreq<-as.numeric(SamplingFreq[2])
+
+# Obtenemos la variable ChannelCount
+ChannelCount<-grep(pattern=\"ChannelCount=.\",fichero, value=TRUE)
+ChannelCount<-unlist(strsplit(ChannelCount, split=\"=\"))
+ChannelCount<-as.numeric(ChannelCount[2])
+
+# Obtenemos la variable Units
+Units<-grep(pattern=\"[UNITS]\",fichero, fixed=TRUE)
+Units<-fichero[Units+1]
+
+# Obtenemos las variables TipoPatada y OrdenComienzo
+TipoPatada_index<-grep(pattern=\"[COMMENT]\", fichero, fixed=TRUE)
+OrdenComienzo<-unlist(strsplit(gsub(x=fichero[TipoPatada_index+1], replacement=\"\", 
+pattern=\"[^d_i]| [^i_d]\"), split=\"\"))
+OrdenComienzo<-paste0(OrdenComienzo[(length(OrdenComienzo)-2)],
+OrdenComienzo[(length(OrdenComienzo)-1)], OrdenComienzo[(length(OrdenComienzo))])
+TipoPatada<-regexpr(\"([0-9]+_[CGL])|([0-9]+[CGL])\",text=fichero[TipoPatada_index+1])
+TipoPatada<-unlist(strsplit(fichero[TipoPatada_index+1], \"\"))[TipoPatada:attributes(TipoPatada)$match.length]
+TipoPatada<-tail(TipoPatada, 1)
+
+# Contruimos una tabla con los datos igual que la del fichero
+source_names<-grep(pattern=\"[SOURCE NAMES]\", fichero, fixed=TRUE)
+side_info<-grep(pattern=\"[SIDE INFO]\", fichero, fixed=TRUE)
+units<-grep(pattern=\"[UNITS]\", fichero, fixed=TRUE)
+
+source_names<-fichero[(source_names+1):(source_names+ChannelCount)]
+side_info<-fichero[(side_info+1):(side_info+ChannelCount)]
+
+columnas<-paste(side_info,source_names, sep=\"_\")
+
+datos_index<-grep(pattern=\"[DATA]\", fichero, fixed=TRUE)+1
+N<-length(fichero)
+datos<-matrix(0, nrow=(N-datos_index+1), ncol=length(columnas))
+colnames(datos)<-columnas
+
+for(j in datos_index:N){
+datos[j-datos_index+1,]<-as.numeric(gsub(x=unlist(strsplit(fichero[j], split=\"\t\")),
+pattern=\",\", replacement=\"\\.\"))
+}
+
+datos<-as.data.frame(datos)
+
+# Transformamos la tabla en un conjunto Tidy
+DataTK<-datos%>%
+  pivot_longer(names_to=\"NombreCanal\", values_to=\"Data\", cols=everything())%>%
+  separate(col=NombreCanal, into=c(\"NombreCanal\",\"Side\"),sep=\"_\")%>%
+  transmute(\"Sujeto\"=Sujeto,\"TipoPatada\"=TipoPatada,\"NombreCanal\"=NombreCanal,
+            \"Side\"=Side, \"OrdenComienzo\"=OrdenComienzo, \"Data\"=Data)
+```"
+"1","*** recursive gc invocation
+*** recursive gc invocation
+*** recursive gc invocation
+*** recursive gc invocation
+*** recursive gc invocation
+*** recursive gc invocation
+*** recursive gc invocation
+*** recursive gc invocation
+*** recursive gc invocation
+*** recursive gc invocation
+*** recursive gc invocation
+"
+"0","```r
+# Guardamos los datos que nos interesan
+save(DataTK, SamplingFreq, Units, ChannelCount, file=\"Ejemplo.RData\")
+```"

@@ -1,0 +1,3 @@
+"0","for (i in 1:5){"
+"0","  plot(aj_step6, which=i)"
+"0","}"

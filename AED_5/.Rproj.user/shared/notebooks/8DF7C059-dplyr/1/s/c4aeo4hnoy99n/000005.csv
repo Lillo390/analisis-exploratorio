@@ -1,0 +1,1 @@
+"0","head(select(Chicago,dptp:pm25tmean2))"

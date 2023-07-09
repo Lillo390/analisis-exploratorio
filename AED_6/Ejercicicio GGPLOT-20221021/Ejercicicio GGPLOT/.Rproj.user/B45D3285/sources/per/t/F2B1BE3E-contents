@@ -1,0 +1,328 @@
+---
+title: "Análisis Exploratorio de Datos.  Visualización de Datos"
+subtitle: Visualización de datos con ggplot
+author: "Daniel Lillo Plaza"
+date:  "`r Sys.Date()`"  #Pondría la fecha del día actual
+params:
+  lang: ES
+lang: "`r switch(params$lang, ES = 'es-ES', EN = 'en-US')`"
+output:
+  html_document:
+    echo: yes
+    number_sections: yes
+    theme: lumen
+    toc: yes
+  html_notebook:
+    echo: yes
+    number_sections: yes
+    toc: yes
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+language:
+  label:
+    fig: 'Figura '
+    tab: 'Tabla '
+    eq: 'Ecuación '
+    thm: 'Teorema '
+    lem: 'Lema '
+    def: 'Definición '
+    cor: 'Corolario '
+    prp: 'Proposición '
+    exm: 'Ejemplo '
+    exr: 'Ejercicio '
+    proof: 'Demostración. '
+    remark: 'Nota: '
+    solution: 'Solución. '
+---
+
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+
+# CONFIGURACIÓN GENERAL
+library(knitr)
+options(width = 100)
+# Opciones generales chunks
+opts_chunk$set(echo=T,message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = './figure/')
+
+#options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+#knit_hooks$set(plot = knitr:::hook_plot_html)
+
+knitr::opts_chunk$set(fig.width=8, fig.height=4)
+```
+
+```{r include=FALSE}
+# Especificamos las librerías necesarias en esta lista
+
+packages = c("tidyverse", "knitr", "ggplot2", "datasets", "RColorBrewer")
+
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed and loaded
+package.check <- lapply(packages, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+#verify they are loaded
+search()
+
+```
+
+
+
+
+
+
+
+
+**Ejercicio 1**
+
+* Carga el fichero ``weatherAUS.RData`` 
+* Crea un objeto ggplot denominado ``grafico1`` en el que esté definido el conjunto de datos ``ds`` alojado en el fichero ``weatherAUS.RData`` y un *aesthetics* en el que en el eje x esté definida la variable ``MinTemp`` y en el eje y esté definida la variable ``MaxTemp``.
+* Añade un capa que defina el objeto geométrico necesario para  construir un gráfico de dispersión de las variables ``MinTemp`` y ``MaxTemp``.
+* Genera ahora el mismo gráfico pero define el *aesthetics* para visualizar  la variable categórica ``RainTomorrow`` y almacénalo en ``grafico2``. A partir del objeto ``grafico2``, representa un gráfico de dispersión en el que se muestren los puntos dados por las variables ``MinTemp`` y ``MaxTemp``, y el color del punto se corresponda con el color de la variable ``RainTomorrow``.
+* Añade a ``grafico2`` una capa para añadir un título y almacénalo en ``grafico3`.
+* Almacena en formato **pdf** el gráfico resultante en un fichero denominado ``Ejercicio1.pdf``.
+
+```{r}
+# Cargamos el fichero
+load("./data/weatherAUS.RData")
+
+# Creamos el objeto ggplot grafico1
+grafico1<-ggplot(ds, aes(x=MinTemp, y=MaxTemp))
+
+# Añadimos la capa del gráfico de dispersión
+grafico1+geom_point()
+
+# Construimos grafico2
+grafico2<-ggplot(ds, aes(x=MinTemp, y=MaxTemp, color=RainTomorrow))+geom_point()
+
+# Construimos grafico3
+grafico3<-grafico2+ggtitle(label="Lluvias en EE.UU. según la temperatura")
+
+# Guardamos en pdf el resultado
+pdf("Ejercicio1.pdf")
+grafico3
+dev.off()
+```
+
+
+**Ejercicio 2**
+
+* Utilizando ggplot haz un grafico de dispersión en el que representes las variables ``Pressure9am`` y ``Temp9am`` en los ejes x e y respectivamente.
+* Modifica el gráfico anterior para incluir información categórica proporcionada por la variable ``RainToday`` con la forma del punto.
+* Modifica el gráfico anterior para incluir información categórica proporcionada por la variable ``RainToday`` con el color del punto. ¿Con qué representación (color o forma) se observa mejor la información que introduce la variable ``RainToday``?
+* Incluye un título explicativo al gráfico de la figura anterior.
+* Almacena en formato **pdf** el gráfico resultante en un fichero denominado ``Ejercicio2.pdf``.
+
+```{r}
+# Creamos el gráfico de dispersión
+g1<-ggplot(ds, aes(x=Pressure9am, y=Temp9am))+geom_point()
+
+# Añadimos la información de RainToday
+g1<-g1+aes(shape=RainToday)
+
+# Añadimos el color
+g1<-g1+aes(color=RainToday)
+# Claramente se observa mejor la información con la variación del color que
+# con la variación de la forma
+
+# Añadimos título
+g1<-g1+ggtitle(label="Lluvias en EE.UU. en función de temperatura y presión")
+
+# Guardamos en pdf el resultado
+pdf("Ejercicio2.pdf")
+g1
+dev.off()
+```
+**Ejercicio 3**
+
+* Carga el fichero ``iris.tidy.Rdata``. 
+* Utiliza la función **str()** para ver qué variables contiene el dataset.
+* Crea un objeto ggplot denominado ``iris.grafico1`` en el que esté definido el conjunto de datos ``iris.tidy`` alojado en el fichero ``iris.tidy.RData`` y un *aesthetics* en el que en el eje x esté definida la variable ``Species`` y en el eje y esté definida la variable ``Value``.
+* Añade un capa que defina el objeto geométrico necesario para  construir un gráfico de dispersión de las variables ``Species`` y ``Value``.
+* Modifica el *aesthetics* de ``iris.grafico1`` para visualizar  la variable categórica `` Part`` y almacénalo en ``iris.grafico2``. A partir del objeto ``iris.grafico2``, representa un gráfico de dispersión en el que se muestren los puntos dados por las variables ``Species`` y ``Value``, y el color del punto se corresponda con el color de la variable ``Part``.
+* Incluye información de la variable ``Measure`` haciendo dos gráficos de dispersión (dispuestos en filas) como los del apartado anterior para los dos valores que toma la variable ``Measure``.
+* Elimina la capa **geom_point()** del gráfico anterior y añade la capa  **geom_jitter()** ¿Qué diferencia observas?
+* Almacena en formato **pdf** el gráfico resultante en un fichero denominado ``Ejercicio3.pdf``.
+
+```{r}
+# Cargamos el fichero de datos
+load("./data/iris_tidy.RData")
+
+# Inspeccionamos el elemento
+str(iris.tidy)
+
+# Creamos el objetvo iris.grafico1
+iris.grafico1<-ggplot(iris.tidy, aes(x=Species, y=Value))
+
+# Añadimos la capa para el gráfico de dispersión
+iris.grafico1<-iris.grafico1+geom_point()
+
+# Modificamos para añadir la variable Part
+iris.grafico1<-iris.grafico1+aes(color=Part)
+
+# Subdividimos según Measure
+iris.grafico1<-iris.grafico1+ facet_wrap(~ Measure, nrow = 2)
+
+# Quitamos geom_point y añadimos geom_jitter
+iris.grafico1$layers<-NULL
+iris.grafico1<-iris.grafico1+geom_jitter()
+# Ahora la información no se encuentra apilada en una única fila vertical, si no que se apila en forma de barra
+
+# Guardamos en pdf el resultado
+pdf("Ejercicio3.pdf")
+iris.grafico1
+dev.off()
+```
+
+
+
+
+
+
+**Ejercicio 4**
+
+* Carga el fichero ``Ejercicio4_Data.Rdata``. Examina las variables que tiene dicho dataset.
+* Representa un gráfico de puntos, en la que se muestre la fecha en el eje x y las ventas en el eje y. Queremos que los datos de cada fabricante sean de un color distinto. ¿Es este gráfico valido para evaluar la evolución de las ventas de cada fabricante?
+* Representa un gráfico como el anterior en el que se muestre la línea que une los puntos que antes has representado.
+* Modifica el gráfico anterior para que la tendencia de cada fabricante este trazada con un tipo de línea diferente.
+* Añade un título el siguiente título al gráfico *"Ventas de compañías tecnológicas"*.
+* Almacena en formato **pdf** el gráfico resultante en un fichero denominado ``Ejercicio4.pdf``.
+
+
+
+```{r}
+# Cargamos el fichero de datos y lo examinamos
+load("./data/Ejercicio4_Data.Rdata")
+str(DatosEjer4)
+
+# Fecha vs ventas
+g2<-ggplot(DatosEjer4, aes(x=Fecha, y=Ventas, color=Fabricante))+geom_point()
+# Sí que es un gráfico válido, pero como el tiempo es una varibale continua sería más adecuado una representación medainte una línea antes que puntos
+
+# Añadimos una línea que una los puntos
+g2<-g2+geom_line()
+
+
+# Cambiamos el tipo de línea
+g2<-g2+aes(linetype=Fabricante)
+
+# Añadimos el título
+g2<-g2+ggtitle(label="Ventas de compañías tecnológicas")
+
+# Guardamos en pdf el resultado
+pdf("Ejercicio4.pdf")
+g2
+dev.off()
+```
+
+
+**Ejercicio 5**
+
+Incluso podemos añadir barras de error a un gráfico de línea. Para ver lo de lo que estamos hablando cargamos el fichero ``ExperimentoEjemplo.Rdata``. Fíjate en como se calculan añaden las barras de error. Del mismo modo este ejemplo es interesante para ver otra forma de añadir títulos y etiquetas en los ejes mediante la función **labs()**.
+
+* Carga el fichero ``Experimento.Rdata``. Examina las variables que tiene dicho dataset.
+
+* Representa un gráfico de puntos, en la que se muestre la ``Dosis`` en el eje x y la ``Altura`` en el eje y. Queremos que los datos de cada ``Complemento`` se represente en una línea diferente con diferentes trazos. Hazlo incluyendo las opciones de tipo de línea y forma del punto dentro del **aes()**  de la capa **ggplot**.
+
+* Crea otro gráfico a partir de añadir al gráfico anterior barras de error a cada punto. El error viene dado por la variable ``Error_Altura``.
+* Crea otro gráfico, como el anterior (**idéntico**), pero en este caso no puedes incluir el tipo de línea y el tipo de punto en el aes()  de la capa ggplot. Además queremos que la paleta de colores sea en tonos de azules.
+* Almacena en formato **pdf** el gráfico resultante en un fichero denominado ``Ejercicio5.pdf``.
+
+```{r}
+# Cargamos el fichero de datos y lo inspeccionamos
+load("./data/ExperimentoEjemplo.Rdata")
+str(df3)
+
+# Creamos el objeto ggplot
+g3<-ggplot(df3, aes(x=dose, y=len, shape=supp, linetype=supp))+geom_point()
+
+# Añadimos el error
+g3<-g3+geom_errorbar(aes(ymax = len + sd, ymin = len - sd))
+
+# Creamos un gráfico idéntico
+g4<-ggplot(df3, aes(x=dose, y =len))+geom_point(aes(shape=supp,color=supp))+geom_errorbar(aes(ymax=len+sd, ymin=len-sd, color=supp,linetype=supp))+scale_color_brewer(palette="Blues", direction=-1)
+
+# Guardamos en pdf el resultado
+pdf("Ejercicio5.pdf")
+g4
+dev.off()
+```
+
+
+
+**Ejercicio 6**
+
+* Carga el fichero ``weatherAUS_distributions.RData`` utilizando lo aprendido en la práctica 1.
+* Crea un gráfico en la que estén los boxplots de la variable ``MaxTemp`` para  cada uno de los años presentes en la variable ``Year`` del dataset.
+* Crea un gráfico en la que estén los gráficos de violín de la variable ``MinTemp`` para  cada uno de los años presentes en la variable ``Year`` del dataset.  Añade en el mismo gráfico una capa de etiquetas de título (Distribución de temperaturas mínimas por año) eje x (Año) y eje y (Temperatura (ºC)).
+* En el gráfico anterior elimina la leyenda y coloca los años en el eje x a 45 grados de inclinación. Busca información en la red sobre como hacer esto.
+* Almacena en formato **pdf** el gráfico resultante en un fichero denominado ``Ejercicio6.pdf``.
+
+
+```{r}
+
+```
+
+
+
+
+
+**Ejercicio 7**
+
+* Descarga de la url  "http://assets.datacamp.com/blog_assets/chol.txt" el dataset de datacamp que utilizarás para este ejercicio utilizando la función **read.table()**.
+
+* Representa el histograma de la variable ``WEIGHT`` del dataframe cargada del fichero anterior.
+
+* Añade título ("Histograma de la variable Peso"), una etiqueta en el eje x ("Peso (kg)") y una etiqueta en el eje y ("Frecuencia").
+
+* Ajusta el rango de representación entre 55 y 115, además consigue que el histograma tenga 20  *bins*.
+
+* Haz que las barras del histograma sean de color azul con una grado de transparencia del 50% y el contorno de color rojo.
+
+* Añade la curva de distribución estimada de color verde.
+
+* Representa el mismo histograma del apartado anterior para cada valor de  la variable ``SMOKE``, recuerda utilizar la función **facet_grid()**.
+* Almacena en formato **pdf** el gráfico resultante en un fichero denominado ``Ejercicio7.pdf``.
+
+
+
+```{r}
+
+```
+
+
+
+
+
+**Ejercicio 8**
+
+* Carga el fichero ``weatherAUS_distributions.RData``.
+
+* Representa en un gráfico de barras la media de la variable ``Pressure9am`` dependiendo de la variable ``Location``. Asegúrate que en la gráfica se ve todo correctamente. Añade un título ("Presión a las 9:00 AM en función de la estación"), un subtítulo ("Presión medida con el procedimiento estándar"), una etiqueta en el eje x ("Ubicación de la estación") y una etiqueta en el eje y ("Valor medio de Pressure9am").
+
+* Representa en un gráfico de barras  la variable la desviación típica de la variable ``Pressure9am`` dependiendo de la variable ``Location``. Asegurate que en la gráfica se ve todo correctamente. Añade un título ("Variabilidad de la presión a las 9:00 AM en función de la estación"), un subtítulo ("Presión medida con el procedimiento estándar"), una etiqueta en el eje x ("Ubicación de la estación") y una etiqueta en el eje y ("Desviación típica  de Pressure9am").
+
+* Representa el mismo gráfico de barras del apartado anterior para cada valor de  la variable ``RainTomorrow``, recuerda utilizar la función **facet_grid()**.
+
+* Almacena en formato **pdf** el gráfico resultante en un fichero denominado ``Ejercicio8.pdf``.
+
+
+
+```{r}
+
+```
+

@@ -1,0 +1,23 @@
+"0","```r
+# Creamos el gráfico de dispersión
+g1<-ggplot(ds, aes(x=Pressure9am, y=Temp9am))+geom_point()
+
+# Añadimos la información de RainToday
+g1<-g1+aes(shape=RainToday)
+
+# Añadimos el color
+g1<-g1+aes(color=RainToday)
+# Claramente se observa mejor la información con la variación del color que
+# con la variación de la forma
+
+# Añadimos título
+g1<-g1+ggtitle(label=\"Lluvias en EE.UU. en función de temperatura y presión\")
+
+# Guardamos en pdf el resultado
+pdf(\"Ejercicio2.pdf\")
+g1
+dev.off()
+```"
+"1","RStudioGD 
+        2 
+"
